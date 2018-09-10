@@ -124,3 +124,54 @@ birth1
 birth2
 ```
 
+3H1: Compute posterior distribution for probability of a birth being a boy p(boy). What param value maximizes posterior prob?
+```{r}
+pgrid.b <- seq(from = 0, to = 1, length.out = 1000)
+prior.b <- rep(1,1000)
+tot.b <- sum(birth1) + sum(birth2)
+tot.babies <- length(birth1) + length(birth2)
+likelihood.b <- dbinom (tot.b, size = tot.babies, prob = pgrid.b)
+posterior.b <- likelihood.b * prior.b
+posterior.b <- posterior.b / sum(posterior.b)
+plot(posterior.b ~ pgrid.b, type = "l")
+pgrid.b[which.max(posterior.b)]
+```
+
+3H2: Draw 10000 values from posterior, and calculate HPDI for 50%, 89% and 97%
+```{r}
+sample.b <- sample(pgrid.b, prob = posterior.b, size = 10000, replace = TRUE)
+HPDI(sample.b, prob = c(0.5, 0.89, 0.97))
+```
+
+3H3: Simulate 10000 replicates of 200 births. 
+```{r}
+b.sim <- rbinom(1e4, size = 200, prob = sample.b)
+{simplehist(b.sim)
+abline(v = tot.b, col = "red")}
+dens(b.sim)
+```
+
+*It looks like it fits the data pretty well although there is a large amount of spread in the data.*
+
+3H4: Compare 10000 counts of boys from 100 simulated FIRST BORNS only to the number of boys in the first births, birth 1.
+
+```{r}
+b.sim.1 <- rbinom(1e4, size = 100, prob = sample.b)
+{simplehist(b.sim.1)
+abline(v = sum(birth1), col = "red")}
+```
+*There are fewer first-born boys in the dataset than the model predicts, but not significantly so*
+
+3H5: Focus on 2nd births that followed female fist borns. Compare 10,000 simulated counts of boys to only those second births that followed girls.  to do this (1) count the # of firstborns who were girls, and simulate that many births 10,000 times (2) compare counts of boys in the sim to actual observed count of boys following girls
+
+```{r}
+girl.fb <- which(birth1 == 0) #49
+n.girl.fb <- length(girl.fb)
+n.b.follow.girl <- sum(birth2[girl.fb]) #39 out of 49 were boys
+b.sim.2 <- rbinom(1e4, size = n.girl.fb, prob = sample.b)
+{simplehist(b.sim.2)
+  abline(v=n.b.follow.girl, col = "red")
+}
+```
+
+*Boys seem to be way more common following girls than the model predicts; e.g. it is more likely to have a boy after a girl than it is to have a boy overall. Perhaps two child families are more likely to be balanced--if they have 2 girls in a row, for example, they go for a 3rd kid in order to have a son. So, a run of girl-girl kids would move into a different dataset (3 child families).*
