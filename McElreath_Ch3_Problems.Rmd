@@ -1,0 +1,56 @@
+---
+title: "Chapter 3 McElreath"
+author: "Wynne Moss"
+date: "September 10, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Chapter 3 Problems
+# Easy problems
+
+Setup using code 3.27 from book
+```{r, setup}
+#possible values of p (proportion of water covering the globe)
+p_grid <- seq(from =0, to = 1, length.out = 1000)
+#this is a uniform prior with total area under the curve = 1
+prior <- rep(1, 1000)
+#likelihood of getting 6 W's out of 9 random samples, given each possible value of p in pgrid
+likelihood <- dbinom (6, size = 9, prob = p_grid)
+#in this case prior =1 and sum (posterior) = 1
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+set.seed(100)
+#draw 10,000 samples from the posterior
+#pull values from p_grid in proportion to their representation in the posterior distribution
+samples <- sample(p_grid, prob = posterior, size = 1e4, replace = TRUE)
+```
+
+3E1: How much posterior prob lies below p = 0.2?
+```{r}
+sum(samples < 0.2)/length(samples)
+```
+
+3E2: How much posterior prob lies above p = 0.8?
+```{r}
+sum(samples > 0.8)/length(samples)
+```
+
+3E3: How much posterior lies between 0.2 and 0.8?
+```{r}
+sum(samples > 0.2 & samples < 0.8)/length(samples)
+```
+
+3E4: 20% of the posterior lies below which value of p?
+```{r}
+quantile(samples, probs = 0.2)
+```
+
+3E5: 20% of the posterior lies above which value of p?
+```{r}
+quantile(samples, probs = 0.8)
+```
+
