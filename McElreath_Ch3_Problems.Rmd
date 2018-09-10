@@ -9,6 +9,10 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r, load libraries}
+library(rethinking)
+```
+
 ## Chapter 3 Problems
 # Easy problems
 
@@ -52,5 +56,10 @@ quantile(samples, probs = 0.2)
 3E5: 20% of the posterior lies above which value of p?
 ```{r}
 quantile(samples, probs = 0.8)
+```
+
+3E6: Which values of p contain the narrowest interval equal to 66% of the posterior prob?
+```{r}
+HDPI(samples, prob = 0.66)
 ```
 
