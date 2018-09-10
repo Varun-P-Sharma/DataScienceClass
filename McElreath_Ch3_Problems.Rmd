@@ -9,15 +9,16 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r, load libraries}
+```{r, load libraries, include = FALSE}
 library(rethinking)
 ```
 
-## Chapter 3 Problems
-# Easy problems
+# Chapter 3 Problems
+
+## Easy problems
 
 Setup using code 3.27 from book
-```{r, setup}
+```{r, gridapprox}
 #possible values of p (proportion of water covering the globe)
 p_grid <- seq(from =0, to = 1, length.out = 1000)
 #this is a uniform prior with total area under the curve = 1
@@ -60,6 +61,66 @@ quantile(samples, probs = 0.8)
 
 3E6: Which values of p contain the narrowest interval equal to 66% of the posterior prob?
 ```{r}
-HDPI(samples, prob = 0.66)
+HPDI(samples, prob = 0.66)
+```
+
+3E7: Which values contain 66% of PP assuming equal PP above and below?
+```{r}
+PI(samples, prob = 0.66)
+```
+
+## Medium Problems
+
+3M1: If there were 8W in 15 tosses, construct posterior distribution.
+```{r}
+p_grid <- seq(from =0, to = 1, length.out = 1000)
+prior <- rep(1, 1000)
+likelihood <- dbinom (8, size = 15, prob = p_grid)
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+```
+
+3M2: Draw 10000 samples from grid approximation and calculate 90% HDPI
+```{r}
+set.seed(100)
+samples <- sample(p_grid, prob = posterior, size = 1e4, replace = TRUE)
+HPDI(samples, prob = 0.9)
+```
+
+3M3: Construct a posterior predictive check. Simulate distribution of samplse averaging over the posterior uncertainty in p. What is the p of observing 8/15?
+```{r}
+w <- rbinom(1e4, size = 15, prob = samples)
+hist(w)
+sum(w==8)/1e4
+```
+
+3M4: Using new posterior, calcualte prob of 6w in 9 tosses
+```{r}
+w2 <- rbinom(1e4, size = 9, prob = samples)
+hist(w2)
+sum(w2==6)/1e4
+```
+
+3M5: add a prior that is zero below p = 0.5 and constant above p = .5. 
+```{r}
+p_grid <- seq(from =0, to = 1, length.out = 1000)
+prior2 <- c(rep(0, 500), rep(1, 500))
+likelihood2 <- dbinom (8, size = 15, prob = p_grid)
+posterior2 <- likelihood * prior2
+posterior2 <- posterior2 / sum(posterior2)
+plot(posterior2~p_grid, type = "l")
+samples2 <- sample(p_grid, prob = posterior2, size = 1e4, replace = TRUE)
+HPDI(samples2, prob = 0.9)
+w3 <- rbinom(1e4, size = 15, prob = samples2)
+simplehist(w3)
+simplehist(w)
+```
+
+## Hard problems
+Introduction
+```{r, include = FALSE}
+data(homeworkch3)
+birth1
+birth2
 ```
 
