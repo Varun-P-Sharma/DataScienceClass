@@ -28,6 +28,7 @@ coug <- read.csv("cougarisotopedata.csv")
 str(coug)
 colnames(coug)[2:3] <- c("N15", "C13")
 coug <- coug[complete.cases(coug),]
+coug$logHD <- log(coug$HousingDensity+1)
 ```
 # Explore variables
 ```{r}
@@ -40,16 +41,7 @@ hist(log(coug$HousingDensity + 1))
 # Fitting model with OLS
 
 ```{r, OLSmodel}
-# Nlm.1 <- lm(N15~AgeMonths*Sex + log(HousingDensity+1)*Sex, coug); summary(Nlm.1)
-# Nlm.2 <- lm(N15~AgeClass + Sex + log(HousingDensity+1)*Sex, coug); summary(Nlm.2)
-# Nlm.3 <- lm(N15~AgeClass + Sex + log(HousingDensity+1)*AgeClass, coug); summary(Nlm.3) # BAD
-# Nlm.4 <- lm(N15~AgeMonths + Sex + log(HousingDensity+1)*Sex, coug); summary(Nlm.4)
-# Nlm.5 <- lm(N15~Sex + log(HousingDensity+1), coug); summary(Nlm.5)
-Nlm <- lm(X_15N~log(HousingDensity+1), coug); summary(Nlm)
-# Clm.5 <- lm(C13~AgeMonths + Sex + log(HousingDensity+1), coug); summary(Clm.5)
-# Clm.6 <- lm(C13~AgeClass + Sex + log(HousingDensity+1), coug); summary(Clm.6)
-# Clm.7 <- lm(C13~ Sex + log(HousingDensity+1), coug); summary(Clm.7)
-# Clm.8 <- lm(C13~ log(HousingDensity+1), coug); summary(Clm.8)
+Nlm <- lm(N15~logHD, coug); summary(Nlm)
 ```
 
 # Optim using SSQ not log-likelihood
@@ -61,12 +53,13 @@ ssq.func <- function(params, x, y_obs){
   return(ssq.sum)
 }
 # test it
-ssq.func(params = c(2, 0.1), x = log(coug$HousingDensity+1), y_obs = coug$X_15N)
+ssq.func(params = c(2, 0.1), x = coug$logHD, y_obs = coug$N15)
 
 # optimize it iwth initial guesses slope = 0.1, int = 0.1
 
-optim(c(0.1, 0.1), ssq.func,  x = log(coug$HousingDensity+1), y_obs = coug$X_15N, method = "BFGS")
-
+lm1<- optim(c(0.1, 0.1), ssq.func,  x = coug$logHD, y_obs = coug$N15, method = "BFGS")
+lm1$par
+Nlm$coefficients
 ```
 
 # Fitting model with log-likelihood
