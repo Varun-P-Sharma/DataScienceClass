@@ -1,0 +1,103 @@
+---
+title: "Data Exploration Linear Reg"
+author: "Wynne Moss"
+date: "August 28, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## The data
+
+Data is from previously published paper (Moss et al. 2016) using stable isotopes to understand cougar diet in wildland urban interfaces.
+Data struture:
+1) individual ID for each cougar collared
+2) X_15N isotope signature for nitrogen
+3) X_13C isotope signature for carbon
+4) age class as categorical
+5) sex
+6) age class in months
+7) median housing density within home range
+
+```{r}
+coug <- read.csv("cougarisotopedata.csv")
+str(coug)
+colnames(coug)[2:3] <- c("N15", "C13")
+coug <- coug[complete.cases(coug),]
+```
+# Explore variables
+```{r}
+hist(coug$N15)
+hist(coug$C13)
+hist(coug$HousingDensity)
+hist(log(coug$HousingDensity + 1))
+```
+
+# Fitting model with OLS
+
+```{r, OLSmodel}
+# Nlm.1 <- lm(N15~AgeMonths*Sex + log(HousingDensity+1)*Sex, coug); summary(Nlm.1)
+# Nlm.2 <- lm(N15~AgeClass + Sex + log(HousingDensity+1)*Sex, coug); summary(Nlm.2)
+# Nlm.3 <- lm(N15~AgeClass + Sex + log(HousingDensity+1)*AgeClass, coug); summary(Nlm.3) # BAD
+# Nlm.4 <- lm(N15~AgeMonths + Sex + log(HousingDensity+1)*Sex, coug); summary(Nlm.4)
+# Nlm.5 <- lm(N15~Sex + log(HousingDensity+1), coug); summary(Nlm.5)
+Nlm <- lm(N15~log(HousingDensity+1), coug); summary(Nlm)
+# Clm.5 <- lm(C13~AgeMonths + Sex + log(HousingDensity+1), coug); summary(Clm.5)
+# Clm.6 <- lm(C13~AgeClass + Sex + log(HousingDensity+1), coug); summary(Clm.6)
+# Clm.7 <- lm(C13~ Sex + log(HousingDensity+1), coug); summary(Clm.7)
+# Clm.8 <- lm(C13~ log(HousingDensity+1), coug); summary(Clm.8)
+```
+
+# Fitting model with log-likelihood
+```{r}
+coug$logHD <- log(coug$HousingDensity+1)
+design_Full <- model.matrix(~logHD, data = coug)
+design_Full
+likeFunc <- function(params, X, y){
+    k <- ncol(X)
+    b <- params[1:k]
+    sigma <- params[k+1]
+    yhat <- X %*% b
+    ll <- sum(dnorm(y, yhat, sigma, log=T))
+    return(-ll)
+}
+# coug$HDCent <- with(coug, logHD-mean(logHD))
+# design_X <- model.matrix(~HDCent, coug)
+fit_FullN <- optim(c(7.5,1,1), likeFunc, X=design_Full, y=coug$N15, method = "BFGS", hessian=T)
+fit_FullN$par
+SEs <- sqrt(diag(solve(fit_FullN$hessian)))
+SEs
+
+tval <- qt(0.025, nrow(coug)-3)
+lower <- fit_FullN$par + tval*SEs[]
+upper <- fit_FullN$par - tval*SEs[]
+lower
+upper
+confint(Nlm)
+params <- fit_FullN$par
+Sigma <- solve(fit_FullN$hessian)
+# CONFIDENCE INTERVALS
+
+library(mvtnorm)
+
+xPred = with(coug, seq(min(logHD), max(logHD), len=100))
+post_draw <- function(){
+  post_draw <- rmvnorm(1, params, Sigma)
+  yhat <- post_draw[1]+post_draw[2]*xPred
+  return(yhat)
+}
+post_preds <- replicate(1000, post_draw())
+lower <- apply(post_preds, 1, function(x) quantile(x, 0.025))
+upper <- apply(post_preds, 1, function(x) quantile(x, 0.975))
+
+{plot(N15 ~ logHD, data=coug, pch=16)
+polygon(c(xPred, rev(xPred)), c(lower, rev(upper)),
+border=NA, col="lightgray")
+yhat = params[1] + params[2]*xPred
+lines(xPred, yhat, col="red", lw=2)
+points(N15~logHD, coug, pch=16)}
+
+```
+
