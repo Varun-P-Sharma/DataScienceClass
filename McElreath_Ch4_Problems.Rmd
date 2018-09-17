@@ -1,0 +1,172 @@
+---
+title: "McElreath_Ch4_Problems"
+author: "Wynne Moss"
+date: "September 17, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(rethinking)
+```
+
+
+## Easy problems
+# 4E1) which line is the likelihood?
+likelihood is the first line (data is drawn from the normal distribution centered around mu
+# 4E2) how many parameters?
+parameters: mu, sigma
+# 4E3) Using the model definition above, write down the appropriate form of Bayes’ theorem thatincludes the proper likelihood and priors.
+prob(mu, sigma |data) <- [prob(data | mu, sigma) x prob(mu) x prob (sigma)] /prob(data) over all values
+# 4E4) which line is the linear model?
+mu = alpha + beta * X
+
+#4E5) how many parameters?
+parameters: alpha, beta, sigma
+
+## MEdium problems
+#4M1) simulate observed heights from the prior
+```{r}
+# get random sigmas
+sigmas <- runif(n = 1000, min = 0, max = 10)
+# get random mean heights
+mus <- rnorm (n = 1000, mean = 0, sd = 10)
+# get random observed heights
+ys <- rnorm(n = 1000, mean = mus,  sd = sigmas)
+hist(ys)
+dens(ys)
+```
+
+#4M2) Translate into an alist
+```{r}
+hlist <- alist(
+  height ~ dnorm(mu, sigma), 
+  mu ~ dnorm(0, 10),
+  sigma ~ dunif(0, 10)
+)
+```
+
+#4M3) translate alist into a mathematical formula
+yi ~ Normal(mu, sigma)
+mu = a + beta*xi
+a ~ Normal(0, 50)
+b ~ Uniform (0, 10)
+sigma ~ Uniform(0, 50)
+
+#4M4) formula for predicting height by hear
+Height ~ Normal(mu, sigma)
+mu ~ a + b*Year
+a ~ Normal(0, 50)
+b ~ Normal(0, 10)
+sigma ~ Uniform(0, 50)
+
+#4M5) adding more specific priors
+I might use a uniform prior on beta that is  > 0
+I might center my prior on sigma by 120 (but probably not since I don't thin you should use the same dataset to fit the piriors?)
+
+#4M6) prior for sigma
+I could use a uniform prior for sigma: dunif(0, 64)
+
+## Hard probelms
+4H1) Provide predicted heights using the kung model 
+```{r}
+# first fit the kung model
+data(Howell1)
+d <- Howell1
+d2 <- d[ d$age >= 18 , ]
+m4.3 <- sampost(
+  alist(
+    height ~ dnorm(mu, sigma),
+    mu <- a + b*weight,
+    a ~ dnorm(156, 100),
+    b ~ dnorm(0, 10),
+    sigma ~ dunif(0,50)
+  ),
+  data = d2
+)
+new.weights <- c(46.95, 43.72, 64.78, 32.59, 54.63)
+n <- length(new.weights)
+pred_hpdi_m <- matrix(NA,nrow = n,ncol=3)
+colnames(pred_hpdi_m) <- c("low89","expected", "high89")
+for(i in 1:n){
+  mu <- m4.3$a + m4.3$b*new.weights[i] #the posterior sample of mu at weight w 
+  newdat <- rnorm(n = length(mu), mu , sd = m4.3$sigma) # pull an observation from each value of sigma
+  pred_hpdi_m[i, 1] <- HPDI(newdat,prob=0.89)[1] # hpdi of the sample 
+  pred_hpdi_m[i, 2] <- mean(mu)
+  pred_hpdi_m[i, 3] <- HPDI(newdat,prob=0.89)[2]
+}
+pred_hpdi_m
+```
+
+4H2) Fit a model using < 18 data
+```{r}
+d3 <- d[ d$age < 18 , ]
+m4.5 <- sampost(
+  alist(
+    height ~ dnorm(mu, sigma),
+    mu <- a + b*weight,
+    a ~ dnorm(120, 100),
+    b ~ dnorm(0, 10),
+    sigma ~ dunif(0,50)
+  ),
+  data = d3
+)
+precis(m4.5)
+```
+
+(a) For every 10 unit increase in weight, children get 27.2 in taller
+
+(b) Plot the data
+```{r}
+w <- seq (from = 0, to = 50, by = 1) # potential weights over which we want to plot best fit line
+n <- length(w)
+hdpi_m <- matrix(NA, nrow = n, ncol = 2) # matrix to store hdpi values
+colnames(hdpi_m) <- c("low89", "high89")
+for (i in 1:n){
+  mu <- m4.5$a + m4.5$b*w[i] # the posterior sample of mu at weight i (for all posterior draws of a and b)
+  hdpi_m[i, ] <- HPDI(mu, prob = 0.89)
+}
+{plot(height~weight, d3, col = "blue")
+abline(a = mean(m4.5[, "a"]), b = mean(m4.5[,"b"]), col = "red")
+lines(w, hdpi_m[, "low89"], col = "grey")
+lines(w, hdpi_m[, "high89"], col = "grey")}
+```
+
+
+(c) The relationship looks curvilinear. I would probably change the assumption of them being linear and add a polynomial or log regression line.
+
+4H2) Fitting a log-relationship
+```{r}
+m4.6 <- sampost(
+  alist(
+    height ~ dnorm(mu, sigma),
+    mu <- a + b*log(weight),
+    a ~ dnorm(178, 100),
+    b ~ dnorm(0, 100),
+    sigma ~ dunif(0,50)
+  ),
+  data = Howell1
+)
+precis(m4.6)
+# plot the predicted mean and 97% HPDI
+w <- seq (from = 1, to = 70, by = 1) # potential weights over which we want to plot best fit line
+n <- length(w)
+hdpi_m <- matrix(NA, nrow = n, ncol = 3) # matrix to store hdpi values
+colnames(hdpi_m) <- c("low89", "high89", "mean")
+for (i in 1:n){
+  mu <- m4.6$a + m4.6$b*log(w[i]) # the posterior sample of mu at weight i (for all posterior draws of a and b)
+  hdpi_m[i, 1:2 ] <- HPDI(mu, prob = 0.97)
+  hdpi_m[i, 3] <- mean(mu)
+}
+
+{plot(height~weight, Howell1, col = "blue")
+lines(w, hdpi_m[, "low89"], col = "grey")
+lines(w, hdpi_m[, "high89"], col = "grey")
+lines(w, hdpi_m[, "mean"], col="red")}
+plot(height~weight, data = Howell1, col = col.alpha(rangi2, 0.4))
+```
+
+
