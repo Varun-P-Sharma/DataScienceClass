@@ -70,7 +70,7 @@ lm1$par
 Nlm$coefficients
 ```
 
-# Fitting model with log-likelihood
+# Optim model with log-likelihood
 ```{r}
 coug$logHD <- log(coug$HousingDensity+1)
 design_Full <- model.matrix(~logHD, data = coug)
@@ -119,5 +119,16 @@ yhat = params[1] + params[2]*xPred
 lines(xPred, yhat, col="red", lw=2)
 points(N15~logHD, coug, pch=16)}
 
+```
+
+# Fitting model with stan_lm
+```{r}
+library(rstan)
+library(rstanarm)
+data.trim <- coug[, c("N15", "logHD")]
+m.stan<- stan_lm(N15 ~ logHD, data = data.trim, prior = R2(0.5, "mean"))
+m.stan$coefficients
+fit_FullN$par #ML estimate
+Nlm$coefficients #OLS estimate
 ```
 
