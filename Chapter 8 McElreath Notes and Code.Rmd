@@ -140,11 +140,17 @@ Can be rescued by weak priors EVEN when the predictors are correlated.
 # Problems
 ## Easy
 8E1) simple metropolis assumes proposal distribution is symmetric
+
 8E2) Gibbs sampling is more efficient because it uses conjugate pairs. Might not use when the conjugate prior isn't appropriate
+
 8E3) HMC can't handle missing data, and it needs continuous parameters
+
 8E4) Actual number of samples contains a lot of non-independent samples because of correlation from sample to sample. Effective is an estimate of the number of independent samples from the posterior.
+
 8E5) Rhat should approach 1.
+
 8E6) shape: should bounce around a consistent value, but not have a trend upwards or downards. At first, it should be sampling a full parameter space.
+
 
 ## Medium
 8M1) Re-estimate terrain ruggedness using a uniform prior and exponential prior for sigma. 
