@@ -13,12 +13,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Types of algorithms
 -*MCMC*: a stochastic process to sample from the posterior; does not assume a gaussian shape (unlike quadratic approx). Spends "more time" in areas of the distribution that have higher likelihood, therefore produces more posterior samples from these parameters.
+
 -*STAN*: runs the Markov chains
+
 -*Metropolis Algorithm*: a specific type of MCMC algorithm when A-->B = B--> A symmetrical
+
 -*Metropolis-hastings*: when the probability of moving from A to B is NOT the same as B to A, e.g. parameters with boundaries at zero. Also reduces computation times.
+
 -*Gibbs sampling*: a type of M-H algorithm that is more efficient. "clever proposals"?. Takes fewer samples to get a good estimate of the posterior. Uses adaptive proposals, rather than being truly random. Uses combos of priors and likelihoods (conjugate pairs). Used by BUGS, JAGS.
+
 -*Conjugate pairs*: analytical solutions for the posterior. You have to use conjugate priors to take this shortcut. Some are more appropriate than others. 
+
 -*Hamiltonian Monte Carlo*: makes a "full sweep" of parameter space, but "slows down" (e.g. samples more) in areas that are more likely. 
+
 
 ## Running HMC with map2stan
 ```{r}
