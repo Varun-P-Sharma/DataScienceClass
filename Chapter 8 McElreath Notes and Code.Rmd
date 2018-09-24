@@ -1,0 +1,484 @@
+---
+title: "Chapter 5 McElreath Notes"
+author: "Wynne Moss"
+date: "September 24, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Notes
+
+## Types of algorithms
+-*MCMC*: a stochastic process to sample from the posterior; does not assume a gaussian shape (unlike quadratic approx). Spends "more time" in areas of the distribution that have higher likelihood, therefore produces more posterior samples from these parameters.
+-*STAN*: runs the Markov chains
+-*Metropolis Algorithm*: a specific type of MCMC algorithm when A-->B = B--> A symmetrical
+-*Metropolis-hastings*: when the probability of moving from A to B is NOT the same as B to A, e.g. parameters with boundaries at zero. Also reduces computation times.
+-*Gibbs sampling*: a type of M-H algorithm that is more efficient. "clever proposals"?. Takes fewer samples to get a good estimate of the posterior. Uses adaptive proposals, rather than being truly random. Uses combos of priors and likelihoods (conjugate pairs). Used by BUGS, JAGS.
+-*Conjugate pairs*: analytical solutions for the posterior. You have to use conjugate priors to take this shortcut. Some are more appropriate than others. 
+-*Hamiltonian Monte Carlo*: makes a "full sweep" of parameter space, but "slows down" (e.g. samples more) in areas that are more likely. 
+
+## Running HMC with map2stan
+```{r}
+library(rethinking)
+data(rugged)
+d <- rugged
+d$log_gdp <- log(d$rgdppc_2000)
+dd <- d[complete.cases(d$rgdppc_2000),]
+
+```
+
+Predict log-GDP with terrain ruggedness, continent and interaction using MAP
+```{r}
+m8.1 <- map(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR*rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0, 10),
+    bA ~ dnorm(0, 10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dunif(0,10)
+  ), data = dd
+)
+precis(m8.1)
+```
+
+Fit using HMC. No more quadtractic approximation (can be non-Gaussian). Requirements: pre-process variable transformations. Make new columns. Can't do it within the code?
+Make a new trimmed dataframe with only the variables you are using. Not necessary but avoids some issues. Stan sensitive to NAs.
+
+```{r}
+dd.trim <- dd[, c("log_gdp", "rugged", "cont_africa")]
+str(dd.trim)
+```
+Now fit using map2stan
+```{r}
+m8.1stan <- map2stan(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR * rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0,10),
+    bA ~ dnorm(0,10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dcauchy(0,2)
+  ), data = dd.trim, verbose = FALSE
+)
+precis(m8.1stan)
+# to run multiple chains
+# m8.1stan_4chains <- map2stan( m8.1stan , chains=4 , cores=4 )
+```
+
+Sigma prior is *half-Cauchy* instead of uniform. Weakly informative prior for SDs. 
+
+Visualizing the posterior and model outputs
+```{r}
+post <- extract.samples(m8.1stan)
+str(post)
+postdf <- as.data.frame(post)
+pairs(m8.1stan)
+show(m8.1stan)
+```
+
+Checking the chain with *trace plots*: shows the samples in sequential order. 
+```{r}
+plot(m8.1stan)
+```
+
+## Diagnosing Chains
+Set the number of samples: `iter` (default = 2000) and `warmup` (defulat = iter/2). 
+We want a good *effective number* of samples. MCMC are autocorrelated so each sample is non independent. Can see the effective number `n_eff`.
+
+If you really want to know the shape as opposed to the means, you need more samples. 
+
+Usually `n_eff` = 200 is enough. 
+
+How many chains are needed? Can set the number of independent chains. When debugging, use 1 chain. Then, when diagnosing use more than one. When running the final model, use 1 long chain. 
+
+Make sure all your chains end up in the same space. 
+
+Bad chains: broad flat regions of the posterior, usually a result of using flat priors. The Markov chain will wander and behave erratically.
+```{r}
+y <- c(-1,1)
+m8.2 <- map2stan(
+    alist(
+        y ~ dnorm( mu , sigma ) ,
+        mu <- alpha
+),
+data=list(y=y) , start=list(alpha=0,sigma=1) , chains=2 , iter=4000 , warmup=1000 )
+precis(m8.2) # standard deviations are crazy
+plot(m8.2) # erratic! parameter estimates vary wildly
+```
+Fixing by adding weak priors:
+```{r}
+m8.3 <- map2stan(
+    alist(
+        y ~ dnorm( mu , sigma ) ,
+        mu <- alpha ,
+        alpha ~ dnorm( 1 , 10 ) ,
+        sigma ~ dcauchy( 0 , 1 )
+),
+data=list(y=y) , start=list(alpha=0,sigma=1) , chains=2 , iter=4000 , warmup=1000 )
+precis(m8.3)
+plot(m8.3)
+```
+
+## Non-identifiable parameters
+Highly correlated predictors create non-identifiable parameters.
+Identify these using a Markov chain. Characteristics: huge SD, similar means but opposite sign. Two chains are in very different parameter space.
+Can be rescued by weak priors EVEN when the predictors are correlated.
+
+# Problems
+## Easy
+8E1) simple metropolis assumes proposal distribution is symmetric
+8E2) Gibbs sampling is more efficient because it uses conjugate pairs. Might not use when the conjugate prior isn't appropriate
+8E3) HMC can't handle missing data, and it needs continuous parameters
+8E4) Actual number of samples contains a lot of non-independent samples because of correlation from sample to sample. Effective is an estimate of the number of independent samples from the posterior.
+8E5) Rhat should approach 1.
+8E6) shape: should bounce around a consistent value, but not have a trend upwards or downards. At first, it should be sampling a full parameter space.
+
+## Medium
+8M1) Re-estimate terrain ruggedness using a uniform prior and exponential prior for sigma. 
+```{r}
+# uniform prior
+m8.3stan <- map2stan(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR * rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0,10),
+    bA ~ dnorm(0,10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dunif(0,10)
+  ), data = dd.trim, verbose = FALSE, debug = FALSE
+)
+plot(m8.3stan)
+# exponential prior
+m8.4stan <- map2stan(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR * rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0,10),
+    bA ~ dnorm(0,10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dexp(1)
+  ), data = dd.trim, verbose = FALSE, debug = FALSE
+)
+plot(m8.4stan)
+precis(m8.3stan); precis(m8.4stan); precis(m8.1stan)
+```
+
+Try with the stanarm package
+```{r}
+library(rstan)
+library(rstanarm)
+m8.4stanarm <- stan_lm(log_gdp ~ rugged * cont_africa, data = dd.trim, prior = R2(0.5))
+plot(m8.4stanarm)
+summary(m8.4stanarm)
+precis(m8.4stan)
+```
+
+It looks like they all create very similar estimates. The model is releatively robust to different prior istributions of sigma. 
+
+8M2) Try reducing the scale for the cauchy and dexp 
+*How do we do this in stan_lm?* Not sure how to set prior for sigma...
+
+Exp scaling down
+```{r}
+me.big <- map2stan(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR * rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0,10),
+    bA ~ dnorm(0,10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dexp(10)
+  ), data = dd.trim, verbose = FALSE, debug = FALSE
+)
+me.med <- map2stan(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR * rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0,10),
+    bA ~ dnorm(0,10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dexp(1)
+  ), data = dd.trim, verbose = FALSE, debug = FALSE
+)
+me.sm<- map2stan(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR * rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0,10),
+    bA ~ dnorm(0,10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dexp(0.1)
+  ), data = dd.trim, verbose = FALSE, debug = FALSE
+)
+precis(me.big); precis(me.med); precis(me.sm)
+```
+
+With Cauchy model
+```{r}
+mc.big <- map2stan(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR * rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0,10),
+    bA ~ dnorm(0,10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dcauchy(0,10)
+  ), data = dd.trim, verbose = FALSE, debug = FALSE
+)
+mc.med <- map2stan(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR * rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0,10),
+    bA ~ dnorm(0,10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dcauchy(0,2)
+  ), data = dd.trim, verbose = FALSE, debug = FALSE
+)
+mc.sm<- map2stan(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR * rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0,10),
+    bA ~ dnorm(0,10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dcauchy(0,.05)
+  ), data = dd.trim, verbose = FALSE, debug = FALSE
+)
+precis(mc.big); precis(mc.med); precis(mc.sm)
+```
+
+Again, it seems pretty robust to changes in scale. Not sure why if these are "weak"?
+
+3M3) Re-estimate with a different number of warmup iterations
+```{r}
+m.w20 <- map2stan(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR * rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0,10),
+    bA ~ dnorm(0,10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dcauchy(0,2)
+  ), data = dd.trim, verbose = FALSE, iter = 2000, warmup = 20
+)
+precis(m.w20)
+plot(m.w20)
+m.w10 <- map2stan(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR * rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0,10),
+    bA ~ dnorm(0,10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dcauchy(0,2)
+  ), data = dd.trim, verbose = FALSE, iter = 2000, warmup = 10
+)
+precis(m.w10)
+plot(m.w10)
+m.w2 <- map2stan(
+  alist(
+    log_gdp ~ dnorm(mu, sigma),
+    mu <- a + bR * rugged + bA*cont_africa + bAR*rugged*cont_africa,
+    a ~ dnorm(0,100),
+    bR ~ dnorm(0,10),
+    bA ~ dnorm(0,10),
+    bAR ~ dnorm(0,10),
+    sigma ~ dcauchy(0,2)
+  ), data = dd.trim, verbose = FALSE, iter = 2000, warmup = 2
+)
+precis(m.w2) # really bad
+plot(m.w2)
+precis(m8.1stan)
+```
+
+Doesn't seem like much warmup is needed!
+
+## Hard problems
+8H1) Explain what the model is doing
+```{r}
+mp <- map2stan(
+    alist(
+        a ~ dnorm(0,1),
+        b ~ dcauchy(0,1)
+    ),
+    data=list(y=1),
+    start=list(a=0,b=0),
+    iter=1e4, warmup=100 , WAIC=FALSE )
+plot(mp)
+precis(mp)
+post <- as.data.frame(extract.samples(mp))
+hist(post$a) # normal distribution with a mean of 0
+hist(post$b)
+dens(post$b, xlim = c(-50, 50))
+```
+
+This is sampling from a normal prior for intercept and a cauchy prior for sigma. I think it's just showing the priors? I don't understand why the cauchy isn't bounded at 0, shouldn't sigma be constrained as positive? 
+
+8H2) Fit divorce rate example from Ch5 using map2stan. Fit m5.1, m5.2 m5.3. Compare using WAIC. 
+```{r}
+data(WaffleDivorce)
+d <- WaffleDivorce
+d$MedianAgeMarriages <- (d$MedianAgeMarriage-mean(d$MedianAgeMarriage))/
+    sd(d$MedianAgeMarriage)
+d.trim <- d[, c("Divorce", "MedianAgeMarriages")]
+d.trim
+m5.1 <- map2stan(
+  alist(
+    Divorce ~ dnorm(mu, sigma),
+    mu <- a + bA*MedianAgeMarriages,
+    a ~ dnorm(10,10),
+    bA ~ dnorm(0,1),
+    sigma ~ dunif(0,10)
+  ), data = d.trim, verbose = FALSE
+)
+
+d$Marriage_S <- (d$Marriage-mean(d$Marriage))/
+    sd(d$Marriage)
+d2.trim <- d[, c("Divorce", "Marriage_S")]
+
+m5.2 <- map2stan(
+  alist(
+    Divorce ~ dnorm(mu, sigma),
+    mu <- a + bR*Marriage_S,
+    a ~ dnorm(10,10),
+    bR ~ dnorm(0,1),
+    sigma ~ dunif(0,10)
+  ), data = d2.trim, verbose = FALSE
+)
+
+d3.trim <- d[, c("Divorce", "Marriage_S", "MedianAgeMarriages")]
+m5.3 <- map2stan(
+  alist(
+    Divorce ~ dnorm(mu, sigma),
+    mu <- a + bR*Marriage_S+bA*MedianAgeMarriages,
+    a ~ dnorm(10,10),
+    bR ~ dnorm(0,1),
+    bA ~ dnorm(0,1),
+    sigma ~ dunif(0,10)
+  ), data = d3.trim, verbose = FALSE
+)
+plot(m5.1); precis(m5.1)
+plot(m5.2); precis(m5.2)
+plot(m5.3); precis(m5.3)
+compare(m5.1, m5.2, m5.3)
+```
+
+8H3) Leg length example
+```{r}
+N <- 100
+height <- rnorm(N,10,2)
+leg_prop <- runif(N,0.4,0.5)
+leg_left <- leg_prop*height +
+    rnorm( N , 0 , 0.02 )
+leg_right <- leg_prop*height +
+    rnorm( N , 0 , 0.02 )
+d <- data.frame(height,leg_left,leg_right)
+m5.8s <- map2stan(
+    alist(
+        height ~ dnorm( mu , sigma ) ,
+        mu <- a + bl*leg_left + br*leg_right ,
+        a ~ dnorm( 10 , 100 ) ,
+        bl ~ dnorm( 2 , 10 ) ,
+        br ~ dnorm( 2 , 10 ) ,
+        sigma ~ dcauchy( 0 , 1 )
+),
+data=d, chains=4, start=list(a=10,bl=0,br=0,sigma=1) )
+
+m5.8s2 <- map2stan(
+    alist(
+        height ~ dnorm( mu , sigma ) ,
+        mu <- a + bl*leg_left + br*leg_right ,
+        a ~ dnorm( 10 , 100 ) ,
+        bl ~ dnorm( 2 , 10 ) ,
+        br ~ dnorm( 2 , 10 ) & T[0,] ,
+        sigma ~ dcauchy( 0 , 1 )
+),
+data=d, chains=4, start=list(a=10,bl=0,br=0,sigma=1) )
+post1 <- as.data.frame(extract.samples(m5.8s))
+hist(post1$bl)
+hist(post1$br)
+post2 <- as.data.frame(extract.samples(m5.8s2))
+hist(post2$bl)
+hist(post2$br)
+precis(m5.8s)
+precis(m5.8s2)
+{mfrow=c(1,2)
+pairs(m5.8s) # perfect negative correlation
+pairs(m5.8s2)
+mfrow=c(1,1)}
+```
+
+It doesn't seem like it has changed anything...? It isn't removing the correlation between the parameters. I think they are better defined now (standard deviation went down), but they still are negatively correlated?
+
+8H4) Compare these using DIc and WAIC
+```{r}
+compare(m5.8s, m5.8s2)
+
+```
+they don't seem that different...why?
+
+8H5) Modify the algorithm
+```{r}
+num_weeks <- 1e5
+positions <- rep(0,num_weeks)
+island_pop <- c(1,4,5,2,10,8,4,2,1,6)
+current <- 10
+for ( i in 1:num_weeks ) {
+    # record current position
+    positions[i] <- current
+    # flip coin to generate proposal island to go to next
+    # if proposal leads to island 11 (which doesn't exist--make it loop to island 1)
+    proposal <- current + sample( c(-1,1) , size=1 )
+    # now make sure he loops around the archipelago
+    if ( proposal < 1 ) proposal <- 10
+    if ( proposal > 10 ) proposal <- 1
+    # move? provability of moving is equal to the ratio of populations
+    prob_move <- island_pop[proposal]/island_pop[current]
+    current <- ifelse( runif(1) < prob_move , proposal , current )
+}
+hist(positions)
+```
+
+8H6) Write a chain to estimate globe tossing
+We want to estimate the proportion of water given the data from tossing the glob.
+There are a number of given proportions possible
+We want to maximize the likelihood of observations; if a new guess makes the likelihood worse, we should be less likely to accept it. 
+For now, I'm leaving out priors, because I don't know how to incorporate them.
+```{r}
+poss.prop <- seq(0,1, length.out = 1000)
+current.prop <- sample(poss.prop,1)
+props.samp <-rep(0, 10000)
+# data are 6 waters in 9 tosses
+for (i in 1:length(props.samp)){
+  props.samp[i] <- current.prop
+  current.lik <- dbinom(6, 9, prob=current.prop)
+  # draw a new sample
+  new.prop <- sample(poss.prop,1)
+  new.lik <- dbinom(6,9, prob = new.prop)
+  ratio <- new.lik/current.lik
+  current.prop <- ifelse( runif(1) < ratio , new.prop , current.prop)
+}
+hist(props.samp)
+dens(props.samp)
+mean(props.samp)
+6/9
+plot(props.samp, type = "l")
+```
+
