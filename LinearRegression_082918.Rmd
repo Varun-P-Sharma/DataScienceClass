@@ -42,6 +42,14 @@ hist(log(coug$HousingDensity + 1))
 
 ```{r, OLSmodel}
 Nlm <- lm(N15~logHD, coug); summary(Nlm)
+x<- seq(min(coug$logHD), max(coug$logHD), length.out = 1000)
+?predict
+predictios <- data.frame(predict.lm(Nlm, newdata = data.frame("logHD"=x), interval = "confidence"))
+{plot(N15~logHD, coug, type = "n")
+polygon(c(x, rev(x)), c(predictios$lwr, rev(predictios$upr)), border=NA, col="lightgray")
+abline(Nlm)
+points(N15~logHD, coug, pch =16, col = "dodgerblue")}
+
 ```
 
 # Optim using SSQ not log-likelihood
