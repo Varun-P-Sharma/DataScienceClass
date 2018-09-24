@@ -168,6 +168,8 @@ m8.3stan <- map2stan(
   ), data = dd.trim, verbose = FALSE, debug = FALSE
 )
 plot(m8.3stan)
+post8.3 <- as.data.frame(extract.samples(m8.3stan))
+dens(post8.3$sigma)
 # exponential prior
 m8.4stan <- map2stan(
   alist(
@@ -180,7 +182,13 @@ m8.4stan <- map2stan(
     sigma ~ dexp(1)
   ), data = dd.trim, verbose = FALSE, debug = FALSE
 )
+post8.4 <- as.data.frame(extract.samples(m8.4stan))
+
+{par(mfrow=c(2,1))
+  dens(post8.4$sigma)
+  dens(post8.3$sigma)}
 plot(m8.4stan)
+
 precis(m8.3stan); precis(m8.4stan); precis(m8.1stan)
 ```
 
@@ -235,6 +243,15 @@ me.sm<- map2stan(
   ), data = dd.trim, verbose = FALSE, debug = FALSE
 )
 precis(me.big); precis(me.med); precis(me.sm)
+postbig <- as.data.frame(extract.samples(me.big))
+postmed <- as.data.frame(extract.samples(me.med))
+postsm <- as.data.frame(extract.samples(me.sm))
+{dens(postsm$sigma, ylim = c(0,10))
+  dens(postmed$sigma, col = "red", add=TRUE)
+  dens(postbig$sigma, col = "blue", add = TRUE)
+}
+dens(post8.3$sigma)
+
 ```
 
 With Cauchy model
@@ -273,9 +290,16 @@ mc.sm<- map2stan(
   ), data = dd.trim, verbose = FALSE, debug = FALSE
 )
 precis(mc.big); precis(mc.med); precis(mc.sm)
+postbig <- as.data.frame(extract.samples(mc.big))
+postmed <- as.data.frame(extract.samples(mc.med))
+postsm <- as.data.frame(extract.samples(mc.sm))
+{dens(postsm$sigma, ylim = c(0,10))
+  dens(postmed$sigma, col = "red", add=TRUE)
+  dens(postbig$sigma, col = "blue", add = TRUE)
+}
 ```
 
-Again, it seems pretty robust to changes in scale. Not sure why if these are "weak"?
+Again, it seems pretty robust to changes in scale. Not sure why, if these are "weak"?
 
 3M3) Re-estimate with a different number of warmup iterations
 ```{r}
@@ -319,6 +343,7 @@ m.w2 <- map2stan(
 precis(m.w2) # really bad
 plot(m.w2)
 precis(m8.1stan)
+
 ```
 
 Doesn't seem like much warmup is needed!
@@ -443,7 +468,6 @@ It doesn't seem like it has changed anything...? It isn't removing the correlati
 8H4) Compare these using DIc and WAIC
 ```{r}
 compare(m5.8s, m5.8s2)
-
 ```
 they don't seem that different...why?
 
