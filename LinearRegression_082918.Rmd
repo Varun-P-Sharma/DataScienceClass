@@ -174,7 +174,10 @@ library(rstan)
 library(rstanarm)
 data.trim <- coug[, c("N15", "logHD")]
 m.stan<- stan_lm(N15 ~ logHD, data = data.trim, prior = R2(0.5, "mean"))
+m.stan2<- stan_lm(N15 ~ logHD, data = data.trim, prior = NULL)
+
 m.stan$coefficients
+m.stan2$coefficients
 fit_FullN$par #ML estimate
 Nlm$coefficients #OLS estimate
 ```

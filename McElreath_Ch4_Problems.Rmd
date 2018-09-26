@@ -160,6 +160,7 @@ for (i in 1:n){
   mu <- m4.6$a + m4.6$b*log(w[i]) # the posterior sample of mu at weight i (for all posterior draws of a and b)
   hdpi_m[i, 1:2 ] <- HPDI(mu, prob = 0.97)
   hdpi_m[i, 3] <- mean(mu)
+  newdat <- rnorm(n = length(mu), mu, sd = m4.3$sigma)
 }
 
 {plot(height~weight, Howell1, col = "blue")
