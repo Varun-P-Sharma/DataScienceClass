@@ -75,6 +75,7 @@ Nlm$coefficients
 coug$logHD <- log(coug$HousingDensity+1)
 design_Full <- model.matrix(~logHD, data = coug)
 design_Full
+
 likeFunc <- function(params, X, y){
     k <- ncol(X)
     b <- params[1:k]
@@ -83,10 +84,12 @@ likeFunc <- function(params, X, y){
     ll <- sum(dnorm(y, yhat, sigma, log=T))
     return(-ll)
 }
+
 # coug$HDCent <- with(coug, logHD-mean(logHD))
 # design_X <- model.matrix(~HDCent, coug)
 fit_FullN <- optim(c(7.5,1,1), likeFunc, X=design_Full, y=coug$N15, method = "BFGS", hessian=T)
 fit_FullN$par
+fit_FullN
 SEs <- sqrt(diag(solve(fit_FullN$hessian)))
 SEs
 
@@ -118,6 +121,31 @@ border=NA, col="lightgray")
 yhat = params[1] + params[2]*xPred
 lines(xPred, yhat, col="red", lw=2)
 points(N15~logHD, coug, pch=16)}
+
+```
+# Likelihood profile
+```{r}
+guesses.B0 <- seq(-100,100,1)
+B1 <- 0.5
+sigma <- 0.5
+lls <- NA
+for (i in 1:length(guesses.B0)){
+  lls[i] <- likeFunc(X=design_Full, y = coug$N15, params = c(guesses.B0[i], B1, sigma))
+}
+{plot(lls~guesses.B0, type ="l", xlim = c(-50, 50), xlab = "Intercept parameter possible values",
+      ylab = "Negative log-likelihood", lwd = 1.5, col = "dodgerblue")
+abline(v = fit_FullN$par[1], lty =2)}
+
+guesses.B1 <- seq(-1,1,length.out = 1000)
+B0 <-7.45
+sigma <- .62
+lls <- NA
+for (i in 1:length(guesses.B1)){
+  lls[i] <- likeFunc(X=design_Full, y = coug$N15, params = c(B0, guesses.B1[i], sigma))
+}
+{plot(lls~guesses.B1, type ="l", xlim = c(-5, 5), xlab = "Intercept parameter possible values",
+      ylab = "Negative log-likelihood", lwd = 1.5, col = "dodgerblue")
+abline(v = fit_FullN$par[2], lty =2)}
 
 ```
 
