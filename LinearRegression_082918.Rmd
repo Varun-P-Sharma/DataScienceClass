@@ -125,7 +125,26 @@ points(N15~logHD, coug, pch=16)}
 ```
 # Likelihood profile
 ```{r}
-guesses.B0 <- seq(-100,100,1)
+guesses.B0 <- seq(0, 10,length.out = 1000)
+guesses.B1 <- seq(-10,10, length.out = 1000)
+lls <- matrix(nrow = length(guesses.B0), ncol = length(guesses.B1))
+
+for(i in 1:length(guesses.B0)){
+  for(j in 1:length(guesses.B1)){
+    lls[i,j] <- likeFunc(X = design_Full, y = coug$N15, params = c(guesses.B0[i], guesses.B1[j], sigma = 0.5))
+  }
+}
+col.l <- colorRampPalette(c('red', 'orange', 'yellow', "green", "blue", "purple"))(100)
+
+levelplot(lls[1:ncol(lls), ncol(lls):1], ylab = "Slope parameter (B1)", xlab = "Intercept parameter(B0)", 
+          scales = list(x=list(at =seq(0,1000,length.out = 10), labels = round(seq(0,10, length.out = 10)),0),
+                        y=list(at =seq(0,1000,length.out = 20), labels = round(seq(-10,10, length.out=20)),0)),
+          col.regions=col.l)
+```
+
+One variable at a time
+```{r}
+guesses.B0 <- seq(-0, 10,length.out = 1000)
 B1 <- 0.5
 sigma <- 0.5
 lls <- NA
