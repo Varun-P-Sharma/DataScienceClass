@@ -11,8 +11,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## The data
-
+# The data
 Data is from previously published paper (Moss et al. 2016) using stable isotopes to understand cougar diet in wildland urban interfaces.
 Data struture:
 1) individual ID for each cougar collared
@@ -22,7 +21,7 @@ Data struture:
 5) sex
 6) age class in months
 7) median housing density within home range
-
+## reading in the data
 ```{r}
 coug <- read.csv("cougarisotopedata.csv")
 str(coug)
@@ -30,7 +29,7 @@ colnames(coug)[2:3] <- c("N15", "C13")
 coug <- coug[complete.cases(coug),]
 coug$logHD <- log(coug$HousingDensity+1)
 ```
-# Explore variables
+## Explore variables
 ```{r}
 hist(coug$N15)
 hist(coug$C13)
@@ -52,7 +51,7 @@ points(N15~logHD, coug, pch =16, col = "dodgerblue")}
 
 ```
 
-# Optim using SSQ not log-likelihood
+# Optim using SSQ 
 ```{r}
 # make a likelihood function
 ssq.func <- function(params, x, y_obs){
@@ -70,7 +69,7 @@ lm1$par
 Nlm$coefficients
 ```
 
-# Optim model with log-likelihood
+# Optim model using log-likelihood
 ```{r}
 coug$logHD <- log(coug$HousingDensity+1)
 design_Full <- model.matrix(~logHD, data = coug)
@@ -125,8 +124,8 @@ points(N15~logHD, coug, pch=16)}
 ```
 # Likelihood profile
 ```{r}
-guesses.B0 <- seq(0, 10,length.out = 1000)
-guesses.B1 <- seq(-10,10, length.out = 1000)
+guesses.B0 <- seq(-1, 1,length.out = 1000)
+guesses.B1 <- seq(0,10, length.out = 1000)
 lls <- matrix(nrow = length(guesses.B0), ncol = length(guesses.B1))
 
 for(i in 1:length(guesses.B0)){
@@ -135,14 +134,20 @@ for(i in 1:length(guesses.B0)){
   }
 }
 col.l <- colorRampPalette(c('red', 'orange', 'yellow', "green", "blue", "purple"))(100)
-
+library(lattice)
 levelplot(lls[1:ncol(lls), ncol(lls):1], ylab = "Slope parameter (B1)", xlab = "Intercept parameter(B0)", 
           scales = list(x=list(at =seq(0,1000,length.out = 10), labels = round(seq(0,10, length.out = 10)),0),
                         y=list(at =seq(0,1000,length.out = 20), labels = round(seq(-10,10, length.out=20)),0)),
           col.regions=col.l)
 ```
 
-One variable at a time
+## One variable at a time
+1) construct a vector of possible values of B0
+2) set B1 and sigma to random values
+3) Compute log likelihood over each value of B0
+4) Plot log likelihood as a function of B0 value.
+
+Note that this isn't a true likelkhood profile as we should be optimizing the value of B1 and sigma over each value of B0, rather than setting them to some fixed value. Their value depends on B0.
 ```{r}
 guesses.B0 <- seq(-0, 10,length.out = 1000)
 B1 <- 0.5
@@ -165,8 +170,91 @@ for (i in 1:length(guesses.B1)){
 {plot(lls~guesses.B1, type ="l", xlim = c(-5, 5), xlab = "Intercept parameter possible values",
       ylab = "Negative log-likelihood", lwd = 1.5, col = "dodgerblue")
 abline(v = fit_FullN$par[2], lty =2)}
-
 ```
+
+# Inference using ML
+First construct a linear model that gives the predicted value of Y for each input X.
+```{r}
+# biological model
+lmod <- function(b0,b1,x){
+    return( b0 + b1*x )
+}
+```
+
+Construct a function that computes the negative log-likelihood given a set of parameters (vector p)
+```{r}
+# log likelihood model
+lm_nll <- function(p,y,x) {
+    mu <- lmod(b0=p[1],b1=p[2],x) #call the linear model
+    nll <- -sum(dnorm(y,mean=mu,sd=p[3],log=TRUE)) #-1 * sum of log-likelihoods 
+    return(nll)
+}
+```
+
+Now fit the model using data, optim will minimize the -log like, equivalent to maximizing likelihood
+Intercept: 7.45
+Slope 0.333
+Sigma 0.6381
+```{r}
+# use optim to fit the full model
+fitlm <- optim(p=c(5,0,.5),lm_nll,y=coug$N15,x=coug$logHD)
+fitlm
+```
+
+Let's create a function that takes a vector of possible slopes (b1 values) and optimizes just b0 and sigma.
+Use this function to create a null model, where slope is zero. Compare the null model and the full model using likelihood ratio
+```{r}
+lm_slopefixed_nll<-function(p, b1, y, x){
+  mu <- lmod(b0 = p[1], b1, x) # 
+  nll <- -sum(dnorm(y, mean=mu, sd = p[2], log = TRUE))
+  return(nll)
+}
+# try it out
+fitlm_slopenull <- optim(p = c(6,0.5), lm_slopefixed_nll, b1=0, y = coug$N15, x = coug$logHD)
+
+# likelihood ratios
+exp(-fitlm$value)/exp(-fitlm_slopenull$value)
+```
+The full model (including a slope of 0.7) is 639 times more likely.
+
+Now, vary B1, re-fit the model for each value of B1. 
+```{r}
+nll_b1 <- rep(NA,50) #empty vector to hold nll for 50 different values of beta_1
+b1_range <- seq(0,1,length.out=length(nll_b1)) #grid of 50 values from 6 to 12
+par <- c(7.456,0.6201)  #starting values for beta_0 and sigma (I used the MLE here)
+i <- 1 #to index the rows of nll_b1
+for ( b1 in b1_range ) {
+    nll_b1[i] <- optim(p=par,lm_slopefixed_nll,b1=b1,y=coug$N15,x=coug$logHD)$value #b1 is set on each loop
+    i <- i + 1 #next row
+}
+likprof_b1 <- exp(-nll_b1)
+
+likratio_b1 <- exp(fit_FullN$value-nll_b1) #likprof_b1 / exp(-fitlm$value)
+# ratio of each model to the best model (likelihood ratio)
+
+# Plot the profiles
+{par(mfrow=c(1,3))
+plot(b1_range,nll_b1,xlab=expression(beta[1]),ylab="Negative Log-Lik",col="#56B4E9")
+plot(b1_range,likprof_b1,xlab=expression(beta[1]),ylab="Likelihood",col="#56B4E9")
+plot(b1_range,likratio_b1,xlab=expression(beta[1]),ylab="Likelihood Ratio",col="#56B4E9")
+abline(h=1/8,col="#E69F00")
+text(.8,1/8,"1/8",pos=3)
+abline(h=1/32,col="#E69F00")
+text(.8,1/32,"1/32",pos=3)}
+```
+A 1/8 confidence interval for the slope is roughly between 0.15 and 0.55. 
+
+# A faster way of computing intervals
+These work after the MLE is found using optim. Likint will call the other functions. Profpar tells the function which to profile while optimizing the others.
+```{r}
+source("source/likint.R")
+{par(mfrow=c(2,2),mar=c(5, 4, 0, 2) + 0.1 )
+beta0_int <- likint(fitlm,profpar=1,lm_nll,plim=c(0,10),pname=expression(beta[0]),y=coug$N15,x=coug$logHD)
+beta1_int <- likint(fitlm,profpar=2,lm_nll,plim=c(0,1),pname=expression(beta[1]),y=coug$N15,x=coug$logHD)
+sigma_int <- likint(fitlm, profpar=3,lm_nll,plim=c(1,10),pname=expression(sigma),y=coug$N15,x=coug$logHD)}
+```
+
+How do you change the initial starting parameters?
 
 # Fitting model with stan_lm
 ```{r}
