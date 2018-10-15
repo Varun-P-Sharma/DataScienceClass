@@ -251,7 +251,7 @@ source("source/likint.R")
 {par(mfrow=c(2,2),mar=c(5, 4, 0, 2) + 0.1 )
 beta0_int <- likint(fitlm,profpar=1,lm_nll,plim=c(0,10),pname=expression(beta[0]),y=coug$N15,x=coug$logHD)
 beta1_int <- likint(fitlm,profpar=2,lm_nll,plim=c(0,1),pname=expression(beta[1]),y=coug$N15,x=coug$logHD)
-sigma_int <- likint(fitlm, profpar=3,lm_nll,plim=c(1,10),pname=expression(sigma),y=coug$N15,x=coug$logHD)}
+sigma_int <- likint(fitlm, profpar=3,lm_nll,plim=c(0.01,1),pname=expression(sigma),y=coug$N15,x=coug$logHD)}
 ```
 
 How do you change the initial starting parameters?
