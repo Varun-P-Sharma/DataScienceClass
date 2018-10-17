@@ -1,0 +1,34 @@
+---
+title: "Individual project outline"
+author: "Wynne Moss"
+date: "October 17, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## About the data
+
+Data are parasite community data, analyzed over time.
+Experimental design: visit 10 sites (ponds) 5 times each over the summer (2017). At each visit, collect 10 individuals of each species and dissect.
+
+Response variable: presence/absence of various parasite species (as a site by species matrix). Other response variables that are univariate could be: parasite richness, abundance of one particular species, or an axis from an ordination.
+
+## Data structure
+In this case, observations are at the individual amphibian level (each row of the dataframe is one individual, columns are characteristics of that individual, and presence/absence of different parasite species.)
+Individuals are nested within populations, within sites. Visits are crossed (???) within sites?
+
+E.g. Site A was visited 6 times. Amphibian P1020 was dissected at site A, visit 1, and belongs to species P. Amphibian N199 was dissected at site B, visit 2, and belongs to species N.
+
+Visits are non-independent within the same site.
+
+*I need to clarify the difference between nesting and crossing*
+
+## Questions of interest
+1) How does parasite community (or diversity/richness) change over time?
+2) Is variation highest between individuals, between host species, or between sites?
+3) How do host-level traits (size, species, developmental stage) impact parasite community? Do the relative roles of these factors change over time?
+4) Are there certain parasite species found together more often than expected by chance?
+
