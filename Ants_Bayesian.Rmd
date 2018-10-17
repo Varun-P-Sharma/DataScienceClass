@@ -1,0 +1,161 @@
+---
+title: "Ants Bayesian"
+author: "Wynne Moss"
+date: "October 17, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# Data entry
+```{r}
+library(tidyverse)
+library(rstan)
+library(rstanarm)
+library(rethinking)
+
+ants <- read.csv("ants.csv", as.is = TRUE)
+head(ants)
+ants
+class(ants$site)
+unique(ants$site)
+ants$habitat <- factor(ants$habitat)
+ants$site <- factor(ants$site)
+
+theme_set(theme_grey()) # re set ggplot defualt since rstan will change 
+```
+
+
+# Running the model
+Model 1: default priors, no centering
+The priors are: intercept is normally distributed around 0, sd = 10
+Slopes are centered around 0 with sd of 2.5 but are adjusted then based on each predictor's scale
+Not sure what the prior is for SD (or does it not exist??)
+```{r, echo = FALSE}
+fit_b <- stan_glm(richness ~ habitat + latitude + habitat:latitude,
+                  family= poisson(link = "log"), data = ants)
+
+```
+Model 2: center variables
+```{r, echo = FALSE}
+fit_b2 <- stan_glm(richness ~ habitat * scale(latitude), family = poisson(link="log"), data = ants)
+```
+
+Model 3: center variables, add more informative priors
+```{r}
+fit_b3 <- stan_glm(richness ~ habitat * scale(latitude), family = poisson(link="log"), data = ants,
+                   prior_aux = cauchy(0,3, autoscale = FALSE))
+```
+
+# Model output exploration
+Compare model estimates
+```{r}
+summary(fit_b)
+summary(fit_b2)
+summary(fit_b3)
+```
+
+Sample the posterior.
+```{r}
+samples_1 <- extract(fit_b$stanfit)
+samples_2 <- extract(fit_b2$stanfit)
+
+hist(samples_1$beta[,2]) #e.g. histogram of \beta_1
+
+# Convenience functions that estimate things from the samples
+methods(class="stanreg") 
+posterior_interval(fit_b,prob=0.95) #central posterior intervals, nb default=0.9
+posterior_interval(fit_b2,prob=0.95) #central posterior intervals, nb default=0.9
+posterior_interval(fit_b3,prob=0.95) #central posterior intervals, nb default=0.9
+
+vcov(fit_b,correlation=TRUE) #Correlation matrix
+vcov(fit_b2,correlation=TRUE) #Correlation matrix
+
+```
+
+# Plotting
+```{r}
+fits <- fit_b2 %>% 
+  as_data_frame %>%
+  rename(intercept = `(Intercept)`) 
+# sample from the posterior
+# for each sample, get the predicted line and plot it
+
+hdpi.1 <- posterior_interval(fit_b2, prob = 0.89)
+
+# get predictor dataframes for forest and bog, we will predict richness for each draw from the posterior
+newd.f <- data.frame(
+  intercept = rep(1, 100),
+  habitat = rep(1,100),
+  latitude = seq(min(ants$latitude), max(ants$latitude), len=100)
+)
+
+newd.f$for.lat <- newd.f$habitat*newd.f$latitude
+
+newd.b <- data.frame(
+  intercept = rep(1, 100),
+  habitat = rep(0,100),
+  latitude = seq(min(ants$latitude), max(ants$latitude), len=100)
+)
+newd.b$b.lat <- newd.b$habitat*newd.b$latitude
+newd.b$scalelat <- scale(newd.b$latitude)
+
+params.b <- fit_b2$coefficients %>% data.frame()
+newd.b$best <- as.vector(exp(as.matrix(newd.b[1:4]) %*% as.matrix(params.b)))
+newd.f$best <- as.vector(exp(as.matrix(newd.f[1:4]) %*% as.matrix(params.b)))
+
+mus.f <- matrix(NA, nrow=100, ncol = 1000)
+mus.b <- matrix(NA, nrow = 100, ncol = 1000)
+lats = seq(min(ants$latitude), max(ants$latitude), len=100)
+hdpi.mat.b <- matrix(NA, nrow = 100, ncol = 2)
+hdpi.mat.f <- matrix(NA, nrow = 100, ncol = 2)
+
+sample.post <- sample_n(fits, size = 1000) %>% data.frame()
+for (i in 1:1000){
+  mus.f[,i] <- exp(sample.post[i,1]+sample.post[i,2]+(sample.post[i,3]+sample.post[i,4])*scale(lats))
+  mus.b[,i] <- exp(sample.post[i,1]+sample.post[i,3]*scale(lats))
+}
+for(i in 1:100){
+  hdpi.mat.b[i,] <- HPDI(mus.b[i,])
+  hdpi.mat.f[i,] <- HPDI(mus.f[i,])
+}
+
+{plot(richness~latitude, data = ants, pch = 16, col = as.factor(habitat), ylim = c(0,21), type = "n")
+for(i in 1:1000){
+  params <- sample_n(fits,1) %>% data.frame()
+  newd.f$Pred.r <- exp(as.matrix(newd.f[1:4]) %*% t(params))
+  newd.b$Pred.r <- exp(as.matrix(newd.b[1:4]) %*% t(params))
+  lines(y = newd.f$Pred.r, x = newd.f$latitude, lwd = .2, col = alpha("forestgreen",.1))
+  lines(y = newd.b$Pred.r, x = newd.b$latitude, lwd = .2, col = alpha("brown",.1))}
+
+lines(y = hdpi.mat.b[,1], x=lats, lwd =2, lty =2, col = "saddlebrown")
+lines(y = hdpi.mat.b[,2], x=lats, lwd =2, lty =2, col = "saddlebrown")
+lines(y = newd.b$best, x=lats, lwd =2,  col = "saddlebrown")
+lines(y = hdpi.mat.f[,1], x=lats, lwd =2, lty =2, col = "darkgreen")
+lines(y = hdpi.mat.f[,2], x=lats, lwd =2, lty =2, col = "darkgreen")
+lines(y = newd.f$best, x=lats, lwd =2, col = "darkgreen")
+points(richness~latitude, pch=21, bg = as.factor(habitat), col = "black", ants)
+}
+
+# try with ggplot
+hdpi.f <- hdpi.mat.f %>% data.frame() %>% mutate(lats = lats)
+hdpi.b <- hdpi.mat.b %>% data.frame() %>% mutate(lats = lats)
+mycolors = c("brown", "forestgreen")
+ggplot()+
+  geom_ribbon(mapping=aes(x=lats,ymin=X1,ymax=X2),
+              alpha=0.2,fill = "forestgreen", data=hdpi.f)+
+  geom_ribbon(mapping=aes(x=lats,ymin=X1,ymax=X2),
+              alpha=0.2,fill = "brown", data=hdpi.b)+
+  geom_line(data = newd.f, mapping = aes(x=latitude, y = best), color="forestgreen")+
+  geom_line(data = newd.b, mapping = aes(x=latitude, y = best), color="brown")+
+  geom_point(data = ants, aes(x=latitude, y = richness, col = habitat))+
+  scale_color_manual(values =mycolors)+
+  guides(color=guide_legend(title="Habitat Type"))+
+  xlab("Latitude") + ylab("Species richness")
+
+```
+
+Scaling the latitude predictor makes this kind of plotting tough...not sure quite how to troubleshoot it.
