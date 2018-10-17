@@ -78,11 +78,18 @@ ggplot()+
 
 ### Using the glm (frequentist) approach---------
 ant.glm <- glm(richness~latitude*habitat, data=ants, family = "poisson")
-summary(ant.glm)
-confint(ant.glm) #confidence intervals for parameters
-plot(ant.glm,1:6,ask=FALSE) #Diagnostic plots
-cov2cor(vcov(ant.glm)) #Correlation matrix for parameters
-logLik(ant.glm)  #The log likelihood
+summary(ant.glm) # P-values are from Z scores (value of param/SE) 
+
+# is this a valid assumption that the parameter is normally distributed?
+
+# so is it fair to say that p values are the certainty in the parameter estimate and ml p values are the significance of the parameter in improving model fit?
+
+# can kind of interepret parameter estimates +/- SE as credible intervals (the probability of the parameter value)
+
+confint(ant.glm) # confidence intervals for parameters using likelihood profiling
+plot(ant.glm,1:6,ask=FALSE) # Diagnostic plots
+cov2cor(vcov(ant.glm)) # Correlation matrix for parameters
+logLik(ant.glm)  # The log likelihood
 
 ## get confidence intervals for plotting
 newd <- data.frame(latitude = rep(seq(min(ants$latitude), max(ants$latitude),
@@ -197,7 +204,7 @@ hist(samples$beta[,1]) #e.g. histogram of \beta_1
 methods(class="stanreg") 
 ?coef.stanreg #see esp. rstanarm::stanreg-methods here
 summary(fit_b,digits=4) #Estimates and standard errors, etc
-launch_shinystan(fit_b) #Diagnostic plots
+#launch_shinystan(fit_b) #Diagnostic plots
 posterior_interval(fit_b,prob=0.95) #central posterior intervals, nb default=0.9
 vcov(fit_b,correlation=TRUE) #Correlation matrix
 # sample(fit_b)
@@ -261,6 +268,7 @@ lines(y = newd.b$best, x=lats, lwd =2,  col = "saddlebrown")
 lines(y = hdpi.mat.f[,1], x=lats, lwd =2, lty =2, col = "darkgreen")
 lines(y = hdpi.mat.f[,2], x=lats, lwd =2, lty =2, col = "darkgreen")
 lines(y = newd.f$best, x=lats, lwd =2, col = "darkgreen")
+palette(c("saddlebrown", "forestgreen"))
 points(richness~latitude, pch=21, bg = as.factor(habitat), col = "black", ants)
 
 
@@ -279,4 +287,92 @@ ggplot()+
   scale_color_manual(values =mycolors)+
   guides(color=guide_legend(title="Habitat Type"))+
   xlab("Latitude") + ylab("Species richness")
+
+### Revisiting original questions----
+# does the realtionship of latitude and richness change with habitat?
+# no, not significantly (the intxn term is not significant)
+
+# how do we combine intxn parameters to get one measure of slope for forest? Or, if it's not significant, how do we report?
+
+# when we don't surpress intercept, the meaning of B1(forest) is the diff btw forest and bog
+# when we DO surpress intercept, the meaning of B1 (forest) is the mean forest richness when lat is 0
+
+fit2 <- glm(richness ~ habitat + latitude + habitat:latitude-1, 
+            family = poisson(link = "log"), data = ants)
+summary(fit2)
+model.matrix(fit2)
+summary(ant.glm)
+summary(fit2)
+
+fit3 <- glm(richness ~ 1+ habitat + latitude + habitat:latitude, 
+            family = poisson(link = "log"), data = ants)
+model.matrix(fit3)
+
+fit4 <- glm(richness ~ habitat + latitude + habitat:latitude + 0, 
+            family = poisson(link = "log"), data = ants)
+model.matrix(fit4)
+
+ants$fhabitat <- factor(ants$habitat, levels = c("forest", "bog"))
+fit5 <- glm(richness~fhabitat + latitude + fhabitat:latitude, family = poisson(link="log"), data = ants)
+summary(fit5)
+summary(ant.glm)
+summary(fit4)
+
+# if i want an overall effect of latitude, I would just pull out habitat and fit the model
+
+# when we plot the fitted model, the slopes look a lot different (even though the interaction term isn't significant)
+# the relatioship between latitude and LOG of richness are probably parallel, but once we exponentiate them. 
+# the two lines when log(s) is on the y axis is almost paralell
+
+# intercept is log(richness) when latitude is 0
+# habitat forest is the diff in log(richness) btw  forest and bog when latitude is 0
+# why is the uncertainty around forest so high? when we know forest is different!
+# forest:latitude and forest are negatively correlated. 
+# an optimization problem! when you optimize over one parameter but then change it a little bit the other parameter has to change a lot! creates high correlation 
+# we need to be skeptical of this model.
+
+#centering
+fit6 <- glm(richness ~ habitat *scale(latitude)-1, 
+            family = poisson(link = "log"), data = ants)
+summary(fit6)
+
+fit.6r <- glm(richness ~ habitat + scale(latitude)-1,
+              family = poisson(link = "log"), data = ants)
+summary(fit.6r)
+AIC(fit6)
+AIC(fit.6r)
+AIC(ant.glm)
+
+
+newd <- data.frame(latitude = rep(seq(min(ants$latitude), max(ants$latitude),
+                                      length.out=100),2), 
+                   habitat = factor(rep(c("bog","forest"),each=100)))
+preds <- predict(fit.6r,newdata=newd,se.fit=TRUE)
+mlp <- preds$fit         #mean of the linear predictor
+selp <- preds$se.fit     #se of the linear predictor
+cillp <- mlp - 2 * selp  #lower of 95% CI for linear predictor
+ciulp <- mlp + 2 * selp  #upper
+cilp <- exp(cillp)       #lower of 95% CI for response scale
+ciup <- exp(ciulp)       #upper
+mp <- exp(mlp)           #mean of response scale
+
+preds <- cbind(newd,preds,cilp,ciup,mp)
+preds
+
+palette(mycolors)
+plot(ants$latitude,ants$richness,pch=16, col=as.factor(ants$habitat), ylab= "richness", xlab = "habitat")
+
+cat <- c("bog","forest")
+for ( i in 1:2 ) {
+  subd <- subset(preds,habitat==cat[i])
+  lines(subd$latitude,subd$mp,lty=1, col = mycolors[i])
+  lines(subd$latitude,subd$cilp,lty=2,col=mycolors[i])
+  lines(subd$latitude,subd$ciup,lty=2,col=mycolors[i])
+}
+
+ggplot() +
+  geom_ribbon(mapping=aes(x=latitude,ymin=cilp,ymax=ciup,fill=habitat),
+              alpha=0.2,data=preds) +
+  geom_point(mapping=aes(x=latitude,y=richness,col=habitat),data=ants) +
+  geom_line(mapping=aes(x=latitude,y=mp,col=habitat),data=preds)
 
