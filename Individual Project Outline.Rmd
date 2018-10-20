@@ -19,6 +19,7 @@ Response variable: presence/absence of various parasite species (as a site by sp
 ## Data structure
 In this case, observations are at the individual amphibian level (each row of the dataframe is one individual, columns are characteristics of that individual, and presence/absence of different parasite species.)
 Individuals are nested within populations, within sites. Visits are crossed (???) within sites?
+*BAM - nested: individual within visit within pond*
 
 E.g. Site A was visited 6 times. Amphibian P1020 was dissected at site A, visit 1, and belongs to species P. Amphibian N199 was dissected at site B, visit 2, and belongs to species N.
 
@@ -29,6 +30,9 @@ Visits are non-independent within the same site.
 ## Questions of interest
 1) How does parasite community (or diversity/richness) change over time?
 2) Is variation highest between individuals, between host species, or between sites?
+*Neat - this is a variance component question*
 3) How do host-level traits (size, species, developmental stage) impact parasite community? Do the relative roles of these factors change over time?
+*Probably too complicated for now but a single species model will be the start*
 4) Are there certain parasite species found together more often than expected by chance?
+*We'll get to this sort of question later - hopefully*
 
