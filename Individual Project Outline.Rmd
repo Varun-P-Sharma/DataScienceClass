@@ -14,18 +14,27 @@ knitr::opts_chunk$set(echo = TRUE)
 Data are parasite community data, analyzed over time.
 Experimental design: visit 10 sites (ponds) 5 times each over the summer (2017). At each visit, collect 10 individuals of each species and dissect.
 
-Response variable: presence/absence of various parasite species (as a site by species matrix). Other response variables that are univariate could be: parasite richness, abundance of one particular species, or an axis from an ordination.
+Explanatory variables:
+  * Site: as a random effect
+  * visit: as a factor, if it appears non-linear w/r to response variable, or continuous if appears linear
+  * Snout-vent length, a measure of body size: as a continuous predictor
+  * Standardized snout-vent length, relative to other individuals (negative values are an individual smaller than average): as a continuous predictor
+  * Latitude: as a continuous predictor 
+  
+Response variables:
+  * Presence/absence of various parasite species
+  * Parasite richness
+  * Abundance of a particular parasite species
+  * An axis from an ordination, representing a combination of various parasite species
 
 ## Data structure
 In this case, observations are at the individual amphibian level (each row of the dataframe is one individual, columns are characteristics of that individual, and presence/absence of different parasite species.)
-Individuals are nested within populations, within sites. Visits are crossed (???) within sites?
+Individuals are nested within populations, within ponds. Visits are crossed within sites.
 *BAM - nested: individual within visit within pond*
 
 E.g. Site A was visited 6 times. Amphibian P1020 was dissected at site A, visit 1, and belongs to species P. Amphibian N199 was dissected at site B, visit 2, and belongs to species N.
 
 Visits are non-independent within the same site.
-
-*I need to clarify the difference between nesting and crossing*
 
 ## Questions of interest
 1) How does parasite community (or diversity/richness) change over time?
