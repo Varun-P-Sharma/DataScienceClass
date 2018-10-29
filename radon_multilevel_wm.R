@@ -70,8 +70,13 @@ ggplot(data=radon_dat) +
 #' Violin plots combine the information in boxplots and histograms. The shape is
 #' a density smoother. Tufte might complain of too much data ink. ;)
 ggplot(data=radon_dat) +
-    geom_violin(mapping = aes(y=radon,x=floor,fill=floor,col=floor))
+    geom_violin(mapping = aes(y=radon,x=floor,fill=floor), colour = "black")+
+    geom_jitter(aes(y=radon,x=floor,fill = floor, col = floor), alpha = .2, size = 1)
 
+
+ggplot(data=radon_dat) +
+  geom_violin(mapping = aes(y=log(radon+.1),x=floor,fill=floor), colour = "black")+
+  geom_jitter(aes(y=log(radon+.1),x=floor, fill = floor), colour = "black", alpha = .2, size = 1)
 #' Here is where `ggplot` shines: exploration of structured data. Let's look at
 #' radon levels by county and floor. To combat overlap, I have jittered the
 #' points on the y-axis (the y-axis does not measure anything) by appending
@@ -83,7 +88,9 @@ ggplot(data=radon_dat) +
 #' to compile.
 #+ fig.width=14, fig.height=10, dev='svg'
 radon_dat %>%
-    mutate(yjit=jitter(0*radon)) %>%
+  # y jit just makes a nonsense y axis for this plot (to spread data out)
+  # the pipe doesn't change radon dat because this y value is kind of pointless
+    mutate(yjit=jitter(0*radon)) %>% 
     ggplot() +
     geom_point(mapping = aes(x=radon,col=floor,y=yjit),shape=1,alpha=0.5) +
     facet_wrap(facets = ~ county) +
@@ -101,7 +108,6 @@ radon_dat %>%
     group_by(county) %>%
     summarize(sample_size=n()) %>%
     arrange(-sample_size)
-
 #' We see 5 counties with more than 40 houses sampled. Let's extract these
 #' (using `filter()`) to get a better sense of how radon distributions within
 #' counties might vary between counties. We'll also restrict to basement data.
