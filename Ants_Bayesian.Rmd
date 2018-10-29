@@ -149,7 +149,7 @@ ggplot()+
   scale_fill_manual(values = mycols)+
   scale_color_manual(values=mycols)+
   labs(x="latitude", y = "species richness")
-  
+
 ```
 
 Now try plotting with the centered model

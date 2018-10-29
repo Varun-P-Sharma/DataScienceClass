@@ -197,9 +197,23 @@ Try with the stanarm package
 library(rstan)
 library(rstanarm)
 m8.4stanarm <- stan_lm(log_gdp ~ rugged * cont_africa, data = dd.trim, prior = R2(0.5))
-plot(m8.4stanarm)
+m8.5stanarm <- stan_lm(log_gdp ~ rugged * cont_africa, data = dd.trim, prior = NULL, adapt_delta = 0.99, prior_aux = cauchy(0,3))
+m8.5stanarm <- stan_glm(log_gdp ~ rugged * cont_africa, data = dd.trim, adapt_delta = 0.99, prior_aux = cauchy(0,3), prior_intercept = normal(0,10))
+
+m8.5stanarm.def <- stan_glm(log_gdp ~ rugged * cont_africa, data = dd.trim, adapt_delta = 0.99)
+
+m8.5stanarm.def$prior.info
+
+m8.5stanarm <- stan_glm(log_gdp ~ rugged * cont_africa, data = dd.trim)
+
+m8.5stanarm.def$prior.info
+plot(m8.5stanarm)
 summary(m8.4stanarm)
+plot(m8.5stanarm.def)
+summary(m8.5stanarm)
+
 precis(m8.4stan)
+traceplot(m8.5stanarm$stanfit, inc_warmup = TRUE, window = c(0,10))
 ```
 
 It looks like they all create very similar estimates. The model is releatively robust to different prior istributions of sigma. 
