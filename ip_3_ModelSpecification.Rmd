@@ -1,0 +1,12 @@
+---
+title: "ip_3_ModelSpecification"
+author: "Wynne Moss"
+date: "October 31, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## The data
