@@ -1,5 +1,5 @@
 ---
-title: "ip_3_ModelSpecification"
+title: "Independent Project Model Specification"
 author: "Wynne Moss"
 date: "October 31, 2018"
 output: pdf_document
@@ -10,3 +10,56 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## The data
+SUMMARY OF DATASET: I quantified parasite communities across 10 different pond sites in the East Bay of California; each site was visited 4-6 times within the 2017 summer. At each visit I collected 10-12 individuals from 2 amphibian species. Individuals were measured and parasite infection was quantified.
+
+GROUPING VARIABLES: 
+  * Site (10 ponds) - this is a random variable.
+  * Visit (6 visits) - I want to treat this as a fixed effect, even though visits are nested (?) within sites (so should it go in as a predictor?)
+  * Species (2 species) - Again, I want to treat this as a fixed effect, although species are nested(?) within site visit
+
+PREDICTOR VARIABLES:
+  * Species (2 species) - I think this is a better designation for species
+  * Body size (snout-vent-length) - A continuous variable (fixed effect) at the individual level
+  * Developmental stage - A continuous variable at the individual level...problematic since development is measured differently in newts vs. frogs
+  * Sex - A factor variable at the individual level
+
+RESPONSE VARIABLE:
+  * The number of parasites found within an individual. For this analysis, just count number of Echinostoma parasites. Can be modeled as Poisson distributed with a negative binomial to account for aggregation. Infection status (1 or 0) could also be modeled as a binary response variable using logistic regression. 
+
+
+## Questions
+1) Does the impact of species and body size change over the course of the summer (interact with visit)?
+2) How much of the variation in overall parasite load is explained by visit-level, species-level, site-level, or individual-level variation?
+
+## Display the structure of the data
+```{r}
+dis <- read.csv("diss.data.2017.csv")
+# colnames(dis)
+str(dis)
+```
+
+## Model formulation
+For now, I'll focus on question 1 with the response variable being `Echinostoma` (number of Echinostoma parasites found within that individual)
+
+$y_i$ ~ Poisson($\mu_i$)
+
+log($\mu_i$) = $\beta_0$ +$\beta_1$SpeciesCode + $\beta_2$visit + $\beta_{1,2}$(SpeciesCode x Visit) + $\beta_3$SVL + $\beta_{2,3}$(SVL x Visit) + (1|SiteCode) 
+
+OR
+
+log($\mu_i$) = $\beta_0$ +$\beta_1$SpeciesCode + $\beta_2$visit + $\beta_{1,2}$(SpeciesCode x Visit) + $\beta_3$SVL + $\beta_{2,3}$(SVL x Visit) + (visit|SiteCode) 
+
+
+OR
+
+For negative binomial:
+
+$y_i$ ~ NB($r$, $p$)? I think sub r in for $\mu_i$ but I'm not sure how $p$ is modeled...
+
+
+## Stan formulation
+In stan_glm, the model could be written as:
+```{r, eval = FALSE}
+stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + (1|SiteCode), 
+           family =neg_binomial_2(link="log"))
+```
