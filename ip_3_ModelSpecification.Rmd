@@ -9,21 +9,36 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r, include = FALSE}
+library(rstanarm)
+library(ggplot2)
+library(lme4)
+library(rstan)
+```
+
 ## The data
 SUMMARY OF DATASET: I quantified parasite communities across 10 different pond sites in the East Bay of California; each site was visited 4-6 times within the 2017 summer. At each visit I collected 10-12 individuals from 2 amphibian species. Individuals were measured and parasite infection was quantified.
 
 GROUPING VARIABLES: 
+
   * Site (10 ponds) - this is a random variable.
+  
   * Visit (6 visits) - I want to treat this as a fixed effect, even though visits are nested (?) within sites (so should it go in as a predictor?)
+  
   * Species (2 species) - Again, I want to treat this as a fixed effect, although species are nested(?) within site visit
 
 PREDICTOR VARIABLES:
+
   * Species (2 species) - I think this is a better designation for species
+  
   * Body size (snout-vent-length) - A continuous variable (fixed effect) at the individual level
+  
   * Developmental stage - A continuous variable at the individual level...problematic since development is measured differently in newts vs. frogs
+  
   * Sex - A factor variable at the individual level
 
 RESPONSE VARIABLE:
+
   * The number of parasites found within an individual. For this analysis, just count number of Echinostoma parasites. Can be modeled as Poisson distributed with a negative binomial to account for aggregation. Infection status (1 or 0) could also be modeled as a binary response variable using logistic regression. 
 
 
@@ -41,25 +56,60 @@ str(dis)
 ## Model formulation
 For now, I'll focus on question 1 with the response variable being `Echinostoma` (number of Echinostoma parasites found within that individual)
 
-$y_i$ ~ Poisson($\mu_i$)
+### random intercept
+$y_i$ ~ Poisson($\mu_{j[i]}$)
 
-log($\mu_i$) = $\beta_0$ +$\beta_1$SpeciesCode + $\beta_2$visit + $\beta_{1,2}$(SpeciesCode x Visit) + $\beta_3$SVL + $\beta_{2,3}$(SVL x Visit) + (1|SiteCode) 
+$\alpha_{i[j]}$ ~ Normal($\mu_\alpha$, $\sigma^2_\alpha$)
 
-OR
+log($\mu_{j[i]}$) = $\alpha_{i[j]}$ +$\beta_1$SpeciesCode + $\beta_2$visit + $\beta_{1,2}$(SpeciesCode x Visit) + $\beta_3$SVL + $\beta_{2,3}$(SVL x Visit) + (1|SiteCode) 
 
-log($\mu_i$) = $\beta_0$ +$\beta_1$SpeciesCode + $\beta_2$visit + $\beta_{1,2}$(SpeciesCode x Visit) + $\beta_3$SVL + $\beta_{2,3}$(SVL x Visit) + (visit|SiteCode) 
+*I am a stumped on the mathematical formulation now that I have random slope and intercept*
 
 
-OR
+### random slope
+$y_i$ ~ Poisson($\mu_{i[j]}$)
 
-For negative binomial:
+log($\mu_{i[j]}$) = $\alpha_{i[j]}$ +$\beta_1$SpeciesCode + $\beta_{i[j]}$visit + $\beta_{1,2}$(SpeciesCode x Visit) + $\beta_3$SVL + $\beta_{2,3}$(SVL x Visit) 
+
+
+$\alpha_{i[j]}$ ~ Normal($\mu_\alpha$, $\sigma^2_\alpha$)
+
+$\beta_{i[j]}$ ~ Normal($\mu_\beta$, ???)
+
+Priors for betas: 
+
+$\beta_0$ ~ dnorm(0,10) # according to the model output?
+
+$\beta_1$ ~ dnorm(0,5) # I think that stan somehow automatically scales
+      
+$\beta_2$ ~ dnorm(0,5)
+
+$\beta_{1,2}$ ~ dnorm(0,5)
+
+$\beta_{2,3}$ ~ dnorm(0,5)
+ 
+
+### For negative binomial:
 
 $y_i$ ~ NB($r$, $p$)? I think sub r in for $\mu_i$ but I'm not sure how $p$ is modeled...
+
+Var($y_i$) ~ $r_i$ + $r_i^2$/$p$  (Allows variance to increase with mean)
+
+
+log($r$) = $\beta_0$ +$\beta_1$SpeciesCode + $\beta_2$visit + $\beta_{1,2}$(SpeciesCode x Visit) + $\beta_3$SVL + $\beta_{2,3}$(SVL x Visit) + (visit|SiteCode)
 
 
 ## Stan formulation
 In stan_glm, the model could be written as:
 ```{r, eval = FALSE}
-stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + (1|SiteCode), 
-           family =neg_binomial_2(link="log"))
+stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + (visit|SiteCode), data = dis,  family =neg_binomial_2(link="log"))
+summary(stan.fit)
+# launch_shinystan(stan.fit)
+stan.samp <- sample(stan.fit)
+samples <- extract(ppfit_bayes$stanfit)
 ```
+
+
+Next steps: incorporate Brett's suggestions. Treat visit as a random effect (there are two levels of grouping), but perhaps have some other metric of visit (Julian date) as a fixed effect allowing it to interact with other variables to affect parasite count. Developmental stages could perhaps be included with an interaction with species, which would allow TATO to have some levels and PSRE to have other levels. e.g. I need to put them in the same column. Instead of using stan's negative binomial (which seems a bit problematic according to googling) I can include individual as a random effect.
+
+- Will autocorrelation of fixed and random effects become an issue?
