@@ -2,7 +2,7 @@
 title: "Independent Project Model Specification"
 author: "Wynne Moss"
 date: "October 31, 2018"
-output: pdf_document
+output: md_document
 ---
 
 ```{r setup, include=FALSE}
@@ -56,53 +56,65 @@ str(dis)
 ## Model formulation
 For now, I'll focus on question 1 with the response variable being `Echinostoma` (number of Echinostoma parasites found within that individual)
 
-### random intercept
-$y_i$ ~ Poisson($\mu_{j[i]}$)
+### Formulation 1
+This is the model formulation for a random intercept model where visit is treated as a fixed effect (perhaps using julian date which is continuous)
+
+$y_i$ ~ NB($\mu_{j[i]}$, $p$) 
+
+$\mu_j[i]}$  is the rate (mean) and $p$ is the overdispersion parameter (since we can't let mean equal variance with overdispersed data).
+
+I'm not sure if this equation is used, or whether $p$ is just modeled like any other parameter with maximum likelihood:
+Var($y_i$) ~ $r_i$ + $r_i^2$/$p$  (Allows variance to increase with mean)
+
+log($\mu_{j[i]}$) = $\alpha_{i[j]}$ +$\beta_1$SpeciesCode + $\beta_2$visit + $\beta_3}$(SpeciesCode x visit) + $\beta_4$SVL + $\beta_{5}$(SVL x Visit)
 
 $\alpha_{i[j]}$ ~ Normal($\mu_\alpha$, $\sigma^2_\alpha$)
+This is between pond variance. J's are ponds (10 total)
 
-log($\mu_{j[i]}$) = $\alpha_{i[j]}$ +$\beta_1$SpeciesCode + $\beta_2$visit + $\beta_{1,2}$(SpeciesCode x Visit) + $\beta_3$SVL + $\beta_{2,3}$(SVL x Visit) + (1|SiteCode) 
+### Formulation 2
+This is the model formulation for a random slope + random intercept model where visit is treated as a fixed effect
 
-*I am a stumped on the mathematical formulation now that I have random slope and intercept*
+$y_i$ ~ NB($\mu_{i}$, $p$)
 
-
-### random slope
-$y_i$ ~ Poisson($\mu_{i[j]}$)
-
-log($\mu_{i[j]}$) = $\alpha_{i[j]}$ +$\beta_1$SpeciesCode + $\beta_{i[j]}$visit + $\beta_{1,2}$(SpeciesCode x Visit) + $\beta_3$SVL + $\beta_{2,3}$(SVL x Visit) 
-
+log($\mu_{i[j]}$) = $\alpha_{i[j]}$ +$\beta_1$SpeciesCode + $\beta_2$(SpeciesCode x Visit) + $\beta_3$SVL + $\beta_4$(SVL x Visit)  + $\beta_{i[j]}$visit
 
 $\alpha_{i[j]}$ ~ Normal($\mu_\alpha$, $\sigma^2_\alpha$)
 
 $\beta_{i[j]}$ ~ Normal($\mu_\beta$, ???)
 
-Priors for betas: 
+Now, I'm not sure how these sigma's work since the random slopes and intercepts are correlated...
+### Formulation 3
+Instead of doing NB, can I have an observation-level random effect which accounts for dispersion? 
 
-$\beta_0$ ~ dnorm(0,10) # according to the model output?
+$y_{ij}$ ~ NB($\mu_{i}$, $p$)
 
-$\beta_1$ ~ dnorm(0,5) # I think that stan somehow automatically scales
-      
-$\beta_2$ ~ dnorm(0,5)
+log($\mu_{i[j]}$) = $\alpha_{i}$ +$\beta_1$SpeciesCode + $\beta_2$(SpeciesCode x Visit) + $\beta_3$SVL + $\beta_4$(SVL x Visit)  + $\beta_{i[j]}$visit
 
-$\beta_{1,2}$ ~ dnorm(0,5)
+Individual level observations are modeled as a random effect, coming with some distribution centered around the mean for that individual...??? 
 
-$\beta_{2,3}$ ~ dnorm(0,5)
- 
+$\alpha_{i}$ ~ Normal($\alpha_{i[j]}$, $\sigma^2_\alpha$) What's the sigma here?
 
-### For negative binomial:
+$\alpha_{i[j]}$ ~ Normal($\mu_j$, $\sigma^2_\alpha$) Each pond level alpha comes from the mean over all the ponds
 
-$y_i$ ~ NB($r$, $p$)? I think sub r in for $\mu_i$ but I'm not sure how $p$ is modeled...
+$\beta_{i[j]}$ ~ Normal($\mu_\beta$, ???)
 
-Var($y_i$) ~ $r_i$ + $r_i^2$/$p$  (Allows variance to increase with mean)
+I confused myself...
 
+### Formulation 4
+I'm trying to incorporate Brett's feedback about using visit as another nesting (although I'm still really confused on nesting vs. crossing, since every site has the same 6 visits, the visit's don't seem unique to each site?)
 
-log($r$) = $\beta_0$ +$\beta_1$SpeciesCode + $\beta_2$visit + $\beta_{1,2}$(SpeciesCode x Visit) + $\beta_3$SVL + $\beta_{2,3}$(SVL x Visit) + (visit|SiteCode)
+It makes sense to me to just include both as random effects, but I think that the effect of visit DIFFERS by pond...
+
+I think the model formula I'm looking for would be something like:
+Echinostoma ~ (visit|SpeciesCode) + (visit|SVL) + (1|SiteCode)
+
+But does this let me ask questions like: does the effect of species lessen over time?
 
 
 ## Stan formulation
 In stan_glm, the model could be written as:
 ```{r, eval = FALSE}
-stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + (visit|SiteCode), data = dis,  family =neg_binomial_2(link="log"))
+stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + (1 + visit|SiteCode), data = dis,  family =neg_binomial_2(link="log"))
 summary(stan.fit)
 # launch_shinystan(stan.fit)
 stan.samp <- sample(stan.fit)

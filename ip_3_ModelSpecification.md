@@ -100,67 +100,98 @@ For now, I'll focus on question 1 with the response variable being
 `Echinostoma` (number of Echinostoma parasites found within that
 individual)
 
-### random intercept
+### Formulation 1
 
-*y*<sub>*i*</sub> ~ Poisson(*μ*<sub>*j*\[*i*\]</sub>)
+This is the model formulation for a random intercept model where visit
+is treated as a fixed effect (perhaps using julian date which is
+continuous)
 
-*α*<sub>*i*\[*j*\]</sub> ~ Normal(*μ*<sub>*α*</sub>,
-*σ*<sub>*α*</sub><sup>2</sup>)
+*y*<sub>*i*</sub> ~ NB(*μ*<sub>*j*\[*i*\]</sub>, *p*)
+
+$\\mu\_j\[i\]}$ is the rate (mean) and *p* is the overdispersion
+parameter (since we can't let mean equal variance with overdispersed
+data).
+
+I'm not sure if this equation is used, or whether *p* is just modeled
+like any other parameter with maximum likelihood: Var(*y*<sub>*i*</sub>)
+~ *r*<sub>*i*</sub> + *r*<sub>*i*</sub><sup>2</sup>/*p* (Allows variance
+to increase with mean)
 
 log(*μ*<sub>*j*\[*i*\]</sub>) = *α*<sub>*i*\[*j*\]</sub>
 +*β*<sub>1</sub>SpeciesCode + *β*<sub>2</sub>visit +
-*β*<sub>1, 2</sub>(SpeciesCode x Visit) + *β*<sub>3</sub>SVL +
-*β*<sub>2, 3</sub>(SVL x Visit) + (1|SiteCode)
+$\\beta\_3}$(SpeciesCode x visit) + *β*<sub>4</sub>SVL +
+*β*<sub>5</sub>(SVL x Visit)
 
-*I am a stumped on the mathematical formulation now that I have random
-slope and intercept*
+*α*<sub>*i*\[*j*\]</sub> ~ Normal(*μ*<sub>*α*</sub>,
+*σ*<sub>*α*</sub><sup>2</sup>) This is between pond variance. J's are
+ponds (10 total)
 
-### random slope
+### Formulation 2
 
-*y*<sub>*i*</sub> ~ Poisson(*μ*<sub>*i*\[*j*\]</sub>)
+This is the model formulation for a random slope + random intercept
+model where visit is treated as a fixed effect
+
+*y*<sub>*i*</sub> ~ NB(*μ*<sub>*i*</sub>, *p*)
 
 log(*μ*<sub>*i*\[*j*\]</sub>) = *α*<sub>*i*\[*j*\]</sub>
-+*β*<sub>1</sub>SpeciesCode + *β*<sub>*i*\[*j*\]</sub>visit +
-*β*<sub>1, 2</sub>(SpeciesCode x Visit) + *β*<sub>3</sub>SVL +
-*β*<sub>2, 3</sub>(SVL x Visit)
++*β*<sub>1</sub>SpeciesCode + *β*<sub>2</sub>(SpeciesCode x Visit) +
+*β*<sub>3</sub>SVL + *β*<sub>4</sub>(SVL x Visit) +
+*β*<sub>*i*\[*j*\]</sub>visit
 
 *α*<sub>*i*\[*j*\]</sub> ~ Normal(*μ*<sub>*α*</sub>,
 *σ*<sub>*α*</sub><sup>2</sup>)
 
 *β*<sub>*i*\[*j*\]</sub> ~ Normal(*μ*<sub>*β*</sub>, ???)
 
-Priors for betas:
+Now, I'm not sure how these sigma's work since the random slopes and
+intercepts are correlated... \#\#\# Formulation 3 Instead of doing NB,
+can I have an observation-level random effect which accounts for
+dispersion?
 
-*β*<sub>0</sub> ~ dnorm(0,10) \# according to the model output?
+*y*<sub>*i**j*</sub> ~ NB(*μ*<sub>*i*</sub>, *p*)
 
-*β*<sub>1</sub> ~ dnorm(0,5) \# I think that stan somehow automatically
-scales
+log(*μ*<sub>*i*\[*j*\]</sub>) = *α*<sub>*i*</sub>
++*β*<sub>1</sub>SpeciesCode + *β*<sub>2</sub>(SpeciesCode x Visit) +
+*β*<sub>3</sub>SVL + *β*<sub>4</sub>(SVL x Visit) +
+*β*<sub>*i*\[*j*\]</sub>visit
 
-*β*<sub>2</sub> ~ dnorm(0,5)
+Individual level observations are modeled as a random effect, coming
+with some distribution centered around the mean for that
+individual...???
 
-*β*<sub>1, 2</sub> ~ dnorm(0,5)
+*α*<sub>*i*</sub> ~ Normal(*α*<sub>*i*\[*j*\]</sub>,
+*σ*<sub>*α*</sub><sup>2</sup>) What's the sigma here?
 
-*β*<sub>2, 3</sub> ~ dnorm(0,5)
+*α*<sub>*i*\[*j*\]</sub> ~ Normal(*μ*<sub>*j*</sub>,
+*σ*<sub>*α*</sub><sup>2</sup>) Each pond level alpha comes from the mean
+over all the ponds
 
-### For negative binomial:
+*β*<sub>*i*\[*j*\]</sub> ~ Normal(*μ*<sub>*β*</sub>, ???)
 
-*y*<sub>*i*</sub> ~ NB(*r*, *p*)? I think sub r in for *μ*<sub>*i*</sub>
-but I'm not sure how *p* is modeled...
+I confused myself...
 
-Var(*y*<sub>*i*</sub>) ~ *r*<sub>*i*</sub> +
-*r*<sub>*i*</sub><sup>2</sup>/*p* (Allows variance to increase with
-mean)
+### Formulation 4
 
-log(*r*) = *β*<sub>0</sub> +*β*<sub>1</sub>SpeciesCode +
-*β*<sub>2</sub>visit + *β*<sub>1, 2</sub>(SpeciesCode x Visit) +
-*β*<sub>3</sub>SVL + *β*<sub>2, 3</sub>(SVL x Visit) + (visit|SiteCode)
+I'm trying to incorporate Brett's feedback about using visit as another
+nesting (although I'm still really confused on nesting vs. crossing,
+since every site has the same 6 visits, the visit's don't seem unique to
+each site?)
+
+It makes sense to me to just include both as random effects, but I think
+that the effect of visit DIFFERS by pond...
+
+I think the model formula I'm looking for would be something like:
+Echinostoma ~ (visit|SpeciesCode) + (visit|SVL) + (1|SiteCode)
+
+But does this let me ask questions like: does the effect of species
+lessen over time?
 
 Stan formulation
 ----------------
 
 In stan\_glm, the model could be written as:
 
-    stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + (visit|SiteCode), data = dis,  family =neg_binomial_2(link="log"))
+    stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + (1 + visit|SiteCode), data = dis,  family =neg_binomial_2(link="log"))
     summary(stan.fit)
     # launch_shinystan(stan.fit)
     stan.samp <- sample(stan.fit)
