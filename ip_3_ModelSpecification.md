@@ -102,15 +102,15 @@ individual)
 
 ### Formulation 1
 
-This is the model formulation for a random intercept model where visit
+This is the model formulation for a random intercept model where `visit`
 is treated as a fixed effect (perhaps using julian date which is
 continuous)
 
 *y*<sub>*i*</sub> ~ NB(*μ*<sub>*j*\[*i*\]</sub>, *p*)
 
-$\\mu\_j\[i\]}$ is the rate (mean) and *p* is the overdispersion
-parameter (since we can't let mean equal variance with overdispersed
-data).
+*μ*<sub>*j*\[*i*\]</sub> is the rate (mean) and *p* is the
+overdispersion parameter (since we can't let mean equal variance with
+overdispersed data).
 
 I'm not sure if this equation is used, or whether *p* is just modeled
 like any other parameter with maximum likelihood: Var(*y*<sub>*i*</sub>)
@@ -143,10 +143,13 @@ log(*μ*<sub>*i*\[*j*\]</sub>) = *α*<sub>*i*\[*j*\]</sub>
 
 *β*<sub>*i*\[*j*\]</sub> ~ Normal(*μ*<sub>*β*</sub>, ???)
 
-Now, I'm not sure how these sigma's work since the random slopes and
-intercepts are correlated... \#\#\# Formulation 3 Instead of doing NB,
-can I have an observation-level random effect which accounts for
-dispersion?
+Now, I'm not sure how these sigmas work since the random slopes and
+intercepts are correlated...
+
+### Formulation 3
+
+Instead of doing NB, can I have an observation-level random effect which
+accounts for dispersion?
 
 *y*<sub>*i**j*</sub> ~ NB(*μ*<sub>*i*</sub>, *p*)
 
@@ -173,29 +176,35 @@ I confused myself...
 ### Formulation 4
 
 I'm trying to incorporate Brett's feedback about using visit as another
-nesting (although I'm still really confused on nesting vs. crossing,
-since every site has the same 6 visits, the visit's don't seem unique to
-each site?)
+nesting (although I'm still really confused on nesting vs. crossing.
+Since every site has the same 6 visits (and they're done within a day of
+each other), the visits don't seem unique to each site?)
 
-It makes sense to me to just include both as random effects, but I think
-that the effect of visit DIFFERS by pond...
+It makes sense to me to include both as random effects, but I am
+wondering if the effect of pond differs by visit. I think ponds get a
+little more similar over time.
 
 I think the model formula I'm looking for would be something like:
-Echinostoma ~ (visit|SpeciesCode) + (visit|SVL) + (1|SiteCode)
+Echinostoma ~ (visit|SpeciesCode) + (visit|SVL) + (1|visit:SiteCode)
 
 But does this let me ask questions like: does the effect of species
-lessen over time?
+lessen over time? Ultimately that's what I'm interested in: how the
+impact of predictors change over the summer (I think that stochastic
+factors dominate early on).
+
+Also, can random effects interact with each other? Am I overthinking
+this completely???
 
 Stan formulation
 ----------------
 
 In stan\_glm, the model could be written as:
 
-    stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + (1 + visit|SiteCode), data = dis,  family =neg_binomial_2(link="log"))
+    stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + 
+                             (1 + visit|SiteCode), data = dis,  family =neg_binomial_2(link="log"))
     summary(stan.fit)
     # launch_shinystan(stan.fit)
     stan.samp <- sample(stan.fit)
-    samples <- extract(ppfit_bayes$stanfit)
 
 Next steps: incorporate Brett's suggestions. Treat visit as a random
 effect (there are two levels of grouping), but perhaps have some other
