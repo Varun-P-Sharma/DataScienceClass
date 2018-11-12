@@ -39,7 +39,7 @@ RESPONSE VARIABLE:
 
   * The number of parasites found within an individual. For this analysis, just count number of Echinostoma parasites. Can be modeled as Poisson distributed with a negative binomial to account for aggregation. Infection status (1 or 0) could also be modeled as a binary response variable using logistic regression. 
 
-![Experimental Design]("ip_fig design.jpg")
+![Experimental Design]("ip_fig_design.jpg")
 
 ## Questions
 1) Does the impact of species and body size change over the course of the summer (interact with visit)?
