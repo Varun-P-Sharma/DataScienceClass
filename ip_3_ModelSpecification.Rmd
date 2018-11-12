@@ -20,12 +20,8 @@ library(rstan)
 SUMMARY OF DATASET: I quantified parasite communities across 10 different pond sites in the East Bay of California; each site was visited 4-6 times within the 2017 summer. At each visit I collected 10-12 individuals from 2 amphibian species. Individuals were measured and parasite infection was quantified.
 
 GROUPING VARIABLES: 
-
   * Site (10 ponds) - this is a random variable.
-  
-  * Visit (6 visits) - I want to treat this as a fixed effect, even though visits are nested (?) within sites (so should it go in as a predictor?)
-  
-  * Species (2 species) - Again, I want to treat this as a fixed effect, although species are nested(?) within site visit
+  * Population (2 species at each site) - this is a random variable
 
 PREDICTOR VARIABLES:
 
@@ -37,10 +33,13 @@ PREDICTOR VARIABLES:
   
   * Sex - A factor variable at the individual level
 
+  * Visit - A continuous variable (though could be treated as a factor if the relationship si non linear)
+
 RESPONSE VARIABLE:
 
   * The number of parasites found within an individual. For this analysis, just count number of Echinostoma parasites. Can be modeled as Poisson distributed with a negative binomial to account for aggregation. Infection status (1 or 0) could also be modeled as a binary response variable using logistic regression. 
 
+![Experimental Design]("ip_4_figure1_expdesign.pdf")
 
 ## Questions
 1) Does the impact of species and body size change over the course of the summer (interact with visit)?
@@ -51,6 +50,8 @@ RESPONSE VARIABLE:
 dis <- read.csv("diss.data.2017.csv")
 # colnames(dis)
 str(dis)
+dis$Pop <- paste(dis$SiteCode, dis$SpeciesCode, sep = "_") # visits are nested by the
+
 ```
 
 ## Model formulation
@@ -118,11 +119,12 @@ Am I overthinking this completely???
 ## Stan formulation
 In stan_glm, the model could be written as:
 ```{r, eval = FALSE}
-stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + 
-                         (1 + visit|SiteCode), data = dis,  family =neg_binomial_2(link="log"))
+stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + (1|SiteCode) + (1|Pop) +
+                         (1|HostCode), data = dis,  family =poisson(link="log"))
 summary(stan.fit)
-# launch_shinystan(stan.fit)
+launch_shinystan(stan.fit)
 stan.samp <- sample(stan.fit)
+save(stan.samp, file = "stan.fit.1.RData")
 ```
 
 
