@@ -103,13 +103,13 @@ individual)
 At the individual level, parasite load (*y*<sub>*i*</sub>) is Poisson
 distributed with an expected mean of *μ*<sub>*i*</sub>
 
-(Equation 1) *y*<sub>*i*</sub> ~ Poisson(*μ*<sub>*i*</sub>)
+*Equation 1*: *y*<sub>*i*</sub> ~ Poisson(*μ*<sub>*i*</sub>)
 
 The log(expected mean parasite level) is predicted by visit, species,
 snout vent length, and interaction, with each individual deviating from
 expected by *ϵ*<sub>*i*</sub>.
 
-(Equation 2) *l**o**g*(*μ*<sub>*i*</sub>) = *α*<sub>*j*\[*i*\]</sub> +
+*Equation 2*: *l**o**g*(*μ*<sub>*i*</sub>) = *α*<sub>*j*\[*i*\]</sub> +
 *β*<sub>1</sub> \* *v**i**s**i**t* +
 *β*<sub>2</sub> \* *s**p**e**c**i**e**s* + *β*<sub>3</sub> \* *S**V**L*
 + *β*<sub>4</sub> \* *v**i**s**i**t* \* *s**p**e**c**i**e**s* +
@@ -119,20 +119,20 @@ Those deviations follow a normal distribution centered around 0 with
 variance of *σ*<sub>*ϵ*</sub><sup>2</sup>. This is the overdispersion
 parameter.
 
-(Equation 3) *ϵ*<sub>*i*</sub> ~ Normal(0,
+*Equation 3*: *ϵ*<sub>*i*</sub> ~ Normal(0,
 *σ*<sub>*ϵ*</sub><sup>2</sup>)
 
 Each individual is a member of a repeatedly sampled population. The
 populations are centered around the mean for that site
 (*γ*<sub>*k*\[*i*\]</sub>).:
 
-(Equation 4) *α*<sub>*j*</sub> ~ Normal(*γ*<sub>*k*\[*i*\]</sub>,
+*Equation 4*: *α*<sub>*j*</sub> ~ Normal(*γ*<sub>*k*\[*i*\]</sub>,
 *σ*<sub>*α*</sub><sup>2</sup>)
 
 The mean for a particular site is drawn from a distribution centered at
 the mean among sites ($\\bar{\\gamma}$):
 
-(Equation 5) *γ*<sub>*k*</sub> ~ Normal($\\bar{\\gamma}$,
+*Equation 5* *γ*<sub>*k*</sub> ~ Normal($\\bar{\\gamma}$,
 *σ*<sub>*γ*</sub><sup>2</sup>)
 
 If there were site level covariates (in the future), $\\bar{\\gamma}$
