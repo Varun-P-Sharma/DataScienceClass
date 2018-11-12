@@ -35,7 +35,7 @@ RESPONSE VARIABLE:
     aggregation. Infection status (1 or 0) could also be modeled as a
     binary response variable using logistic regression.
 
-![Experimental Design](%22ip_fig_design.jpg%22)
+![Experimental Design](ip_fig_design.png)
 
 Questions
 ---------
