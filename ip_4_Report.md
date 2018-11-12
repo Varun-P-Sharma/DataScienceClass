@@ -90,7 +90,8 @@ Display the structure of the data
     ##  $ Opalina                    : int  1 0 1 0 0 1 0 1 0 0 ...
     ##  $ Tritrichomonas             : int  0 0 1 0 0 0 0 0 0 1 ...
 
-    dis$Pop <- paste(dis$SiteCode, dis$SpeciesCode, sep = "_") # visits are nested by the
+    dis$Pop <- paste(dis$SiteCode, dis$SpeciesCode, sep = "_") 
+    # each population is sampled multiple time so the observations are nested with in pop
 
 Model formulation
 -----------------
@@ -99,100 +100,44 @@ For now, I'll focus on question 1 with the response variable being
 `Echinostoma` (number of Echinostoma parasites found within that
 individual)
 
-### Formulation 1
+At the individual level, parasite load (*y*<sub>*i*</sub>) is Poisson
+distributed with an expected mean of *μ*<sub>*i*</sub>
 
-This is the model formulation for a random intercept model where `visit`
-is treated as a fixed effect (perhaps using julian date which is
-continuous)
+1.  *y*<sub>*i*</sub> ~ Poisson(*μ*<sub>*i*</sub>)
 
-*y*<sub>*i*</sub> ~ NB(*μ*<sub>*j*\[*i*\]</sub>, *p*)
+The log(expected mean parasite level) is predicted by visit, species,
+snout vent length, and interaction, with each individual deviating from
+expected by *ϵ*<sub>*i*</sub>.
 
-*μ*<sub>*j*\[*i*\]</sub> is the rate (mean) and *p* is the
-overdispersion parameter (since we can't let mean equal variance with
-overdispersed data).
+1.  *l**o**g*(*μ*<sub>*i*</sub>) = *α*<sub>*j*\[*i*\]</sub> +
+    *β*<sub>1</sub> \* *v**i**s**i**t* +
+    *β*<sub>2</sub> \* *s**p**e**c**i**e**s* +
+    *β*<sub>3</sub> \* *S**V**L* +
+    *β*<sub>4</sub> \* *v**i**s**i**t* \* *s**p**e**c**i**e**s* +
+    *β*<sub>5</sub> \* *v**i**s**i**t* \* *S**V**L* + *ϵ*<sub>*i*</sub>
 
-I'm not sure if this equation is used, or whether *p* is just modeled
-like any other parameter with maximum likelihood: Var(*y*<sub>*i*</sub>)
-~ *r*<sub>*i*</sub> + *r*<sub>*i*</sub><sup>2</sup>/*p* (Allows variance
-to increase with mean)
+Those deviations follow a normal distribution centered around 0 with
+variance of *σ*<sub>*ϵ*</sub><sup>2</sup>. This is the overdispersion
+parameter.
 
-log(*μ*<sub>*j*\[*i*\]</sub>) = *α*<sub>*i*\[*j*\]</sub>
-+*β*<sub>1</sub>SpeciesCode + *β*<sub>2</sub>visit +
-$\\beta\_3}$(SpeciesCode x visit) + *β*<sub>4</sub>SVL +
-*β*<sub>5</sub>(SVL x Visit)
+1.  *ϵ*<sub>*i*</sub> ~ Normal(0, *σ*<sub>*ϵ*</sub><sup>2</sup>)
 
-*α*<sub>*i*\[*j*\]</sub> ~ Normal(*μ*<sub>*α*</sub>,
-*σ*<sub>*α*</sub><sup>2</sup>) This is between pond variance. J's are
-ponds (10 total)
+Each individual is a member of a repeatedly sampled population. The
+populations are centered around the mean for that site
+(*γ*<sub>*k*\[*i*\]</sub>).:
 
-### Formulation 2
+1.  *α*<sub>*j*</sub> ~ Normal(*γ*<sub>*k*\[*i*\]</sub>,
+    *σ*<sub>*α*</sub><sup>2</sup>)
 
-This is the model formulation for a random slope + random intercept
-model where visit is treated as a fixed effect
+The mean for a particular site is drawn from a distribution centered at
+the mean among sites ($\\bar{\\gamma}$):
 
-*y*<sub>*i*</sub> ~ NB(*μ*<sub>*i*</sub>, *p*)
+1.  *γ*<sub>*k*</sub> ~ Normal($\\bar{\\gamma}$,
+    *σ*<sub>*γ*</sub><sup>2</sup>)
 
-log(*μ*<sub>*i*\[*j*\]</sub>) = *α*<sub>*i*\[*j*\]</sub>
-+*β*<sub>1</sub>SpeciesCode + *β*<sub>2</sub>(SpeciesCode x Visit) +
-*β*<sub>3</sub>SVL + *β*<sub>4</sub>(SVL x Visit) +
-*β*<sub>*i*\[*j*\]</sub>visit
-
-*α*<sub>*i*\[*j*\]</sub> ~ Normal(*μ*<sub>*α*</sub>,
-*σ*<sub>*α*</sub><sup>2</sup>)
-
-*β*<sub>*i*\[*j*\]</sub> ~ Normal(*μ*<sub>*β*</sub>, ???)
-
-Now, I'm not sure how these sigmas work since the random slopes and
-intercepts are correlated...
-
-### Formulation 3
-
-Instead of doing NB, can I have an observation-level random effect which
-accounts for dispersion?
-
-*y*<sub>*i**j*</sub> ~ NB(*μ*<sub>*i*</sub>, *p*)
-
-log(*μ*<sub>*i*\[*j*\]</sub>) = *α*<sub>*i*</sub>
-+*β*<sub>1</sub>SpeciesCode + *β*<sub>2</sub>(SpeciesCode x Visit) +
-*β*<sub>3</sub>SVL + *β*<sub>4</sub>(SVL x Visit) +
-*β*<sub>*i*\[*j*\]</sub>visit
-
-Individual level observations are modeled as a random effect, coming
-with some distribution centered around the mean for that
-individual...???
-
-*α*<sub>*i*</sub> ~ Normal(*α*<sub>*i*\[*j*\]</sub>,
-*σ*<sub>*α*</sub><sup>2</sup>) What's the sigma here?
-
-*α*<sub>*i*\[*j*\]</sub> ~ Normal(*μ*<sub>*j*</sub>,
-*σ*<sub>*α*</sub><sup>2</sup>) Each pond level alpha comes from the mean
-over all the ponds
-
-*β*<sub>*i*\[*j*\]</sub> ~ Normal(*μ*<sub>*β*</sub>, ???)
-
-I confused myself...
-
-### Formulation 4
-
-I'm trying to incorporate Brett's feedback about using visit as another
-nesting (although I'm still really confused on nesting vs. crossing.
-Since every site has the same 6 visits (and they're done within a day of
-each other), the visits don't seem unique to each site?)
-
-It makes sense to me to include both as random effects, but I am
-wondering if the effect of pond differs by visit. I think ponds get a
-little more similar over time.
-
-I think the model formula I'm looking for would be something like:
-Echinostoma ~ (visit|SpeciesCode) + (visit|SVL) + (1|visit:SiteCode)
-
-But does this let me ask questions like: does the effect of species
-lessen over time? Ultimately that's what I'm interested in: how the
-impact of predictors change over the summer (I think that stochastic
-factors dominate early on).
-
-Also, can random effects interact with each other? Am I overthinking
-this completely???
+If there were site level covariates (in the future), $\\bar{\\gamma}$
+could be predicted with another linear model with site-level covariates
+(e.g. snail density, size, location).
 
 Stan formulation
 ----------------
@@ -202,18 +147,24 @@ In stan\_glm, the model could be written as:
     stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + (1|SiteCode) + (1|Pop) +
                              (1|HostCode), data = dis,  family =poisson(link="log"))
     summary(stan.fit)
-    launch_shinystan(stan.fit)
+    # launch_shinystan(stan.fit)
     stan.samp <- sample(stan.fit)
     save(stan.samp, file = "stan.fit.1.RData")
 
-Next steps: incorporate Brett's suggestions. Treat visit as a random
-effect (there are two levels of grouping), but perhaps have some other
-metric of visit (Julian date) as a fixed effect allowing it to interact
-with other variables to affect parasite count. Developmental stages
-could perhaps be included with an interaction with species, which would
-allow TATO to have some levels and PSRE to have other levels. e.g. I
-need to put them in the same column. Instead of using stan's negative
-binomial (which seems a bit problematic according to googling) I can
-include individual as a random effect.
+The interactions aren't significant (overlap with zero) so I will remove
+and re-fit. I'm also going to add a random slope model because I think
+the effect of species depends on site. The two species are very similar
+at some sites and very different at other sites.
 
--   Will autocorrelation of fixed and random effects become an issue?
+    stan.fit2 <- stan_glmer(Echinostoma ~ visit + SpeciesCode + SVL + (SpeciesCode|SiteCode) + (1|Pop) +
+                             (1|HostCode), data = dis,  family =poisson(link="log"))
+
+Exploring model fit
+-------------------
+
+Next steps: Perhaps use a random slope model as well (visit|SiteCode).
+Developmental stages could perhaps be included with an interaction with
+species, which would allow TATO to have some levels and PSRE to have
+other levels. e.g. I need to put them in the same column. Will
+autocorrelation of fixed and random effects (e.g. Species, Population)
+become an issue?
