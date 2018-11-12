@@ -61,23 +61,23 @@ For now, I'll focus on question 1 with the response variable being `Echinostoma`
 
 At the individual level, parasite load ($y_i$) is Poisson distributed with an expected mean of $\mu_i$
 
-(1) $y_i$ ~ Poisson($\mu_{i}$) 
+  (Equation 1) $y_i$ ~ Poisson($\mu_{i}$) 
 
 The log(expected mean parasite level) is predicted by visit, species, snout vent length, and interaction, with each individual deviating from expected by $\epsilon_i$.
 
-(2) $log(\mu_i)$ = $\alpha_{j[i]}$ + $\beta_1*visit$ + $\beta_2*species$ + $\beta_3*SVL$ + $\beta_4*visit*species$ + $\beta_5*visit*SVL$ + $\epsilon_i$
+  (Equation 2) $log(\mu_i)$ = $\alpha_{j[i]}$ + $\beta_1*visit$ + $\beta_2*species$ + $\beta_3*SVL$ + $\beta_4*visit*species$ + $\beta_5*visit*SVL$ + $\epsilon_i$
 
 Those deviations follow a normal distribution centered around 0 with variance of $\sigma^2_\epsilon$. This is the overdispersion parameter.
 
-(3) $\epsilon_i$ ~ Normal(0, $\sigma^2_\epsilon$)
+  (Equation 3) $\epsilon_i$ ~ Normal(0, $\sigma^2_\epsilon$)
 
 Each individual is a member of a repeatedly sampled population. The populations are centered around the mean for that site ($\gamma_{k[i]}$).:
 
-(4) $\alpha_j$ ~ Normal($\gamma_{k[i]}$, $\sigma^2_\alpha$)
+  (Equation 4) $\alpha_j$ ~ Normal($\gamma_{k[i]}$, $\sigma^2_\alpha$)
 
 The mean for a particular site is drawn from a distribution centered at the mean among sites ($\bar{\gamma}$):
 
-(5) $\gamma_k$ ~ Normal($\bar{\gamma}$, $\sigma^2_\gamma$)
+  (Equation 5) $\gamma_k$ ~ Normal($\bar{\gamma}$, $\sigma^2_\gamma$)
 
 If there were site level covariates (in the future), $\bar{\gamma}$ could be predicted with another linear model with site-level covariates (e.g. snail density, size, location).
 
