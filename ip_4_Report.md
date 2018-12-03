@@ -7,8 +7,11 @@ visited 4-6 times within the 2017 summer. At each visit I collected
 10-12 individuals from 2 amphibian species. Individuals were measured
 and parasite infection was quantified.
 
-GROUPING VARIABLES: \* Site (10 ponds) - this is a random variable. \*
-Population (2 species at each site) - this is a random variable
+GROUPING VARIABLES:
+
+-   Site (10 ponds) - this is a random variable.
+
+-   Population (2 species at each site) - this is a random variable
 
 PREDICTOR VARIABLES:
 
@@ -194,7 +197,7 @@ Each site varies randomly from the average in the mean parasite load.
 The mean for a particular site is drawn from a distribution centered at
 the mean among sites ($\\bar{\\gamma}$):
 
-*Equation 6* *γ*<sub>*k*</sub> ~ Normal($\\bar{\\omega}$,
+*Equation 6*: *γ*<sub>*k*</sub> ~ Normal($\\bar{\\omega}$,
 *σ*<sub>*ω*</sub><sup>2</sup>)
 
 The effect of visit depends on site, thus we have a random slope as

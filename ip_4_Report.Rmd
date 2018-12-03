@@ -2,7 +2,7 @@
 title: "Independent Project Report"
 author: "Wynne Moss"
 date: "November 28, 2018"
-output: md_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -23,7 +23,9 @@ library(date)
 SUMMARY OF DATASET: I quantified parasite communities across 10 different pond sites in the East Bay of California; each site was visited 4-6 times within the 2017 summer. At each visit I collected 10-12 individuals from 2 amphibian species. Individuals were measured and parasite infection was quantified.
 
 GROUPING VARIABLES: 
+
   * Site (10 ponds) - this is a random variable.
+  
   * Population (2 species at each site) - this is a random variable
 
 PREDICTOR VARIABLES:
@@ -152,7 +154,7 @@ Each sampling event mean ($\alpha_j$) can be predicted from a linear relationshi
 ## Site level
 Each site varies randomly from the average in the mean parasite load. The mean for a particular site is drawn from a distribution centered at the mean among sites ($\bar{\gamma}$):
 
-*Equation 6* $\gamma_k$ ~ Normal($\bar{\omega}$, $\sigma^2_\omega$)
+*Equation 6*:  $\gamma_k$ ~ Normal($\bar{\omega}$, $\sigma^2_\omega$)
 
 The effect of visit depends on site, thus we have a random slope as well, at the site-level. I don't know what greek symbols to use here...
 
