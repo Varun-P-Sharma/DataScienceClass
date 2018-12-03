@@ -51,69 +51,121 @@ Display the structure of the data
 
     dis <- read.csv("diss.data.2017.csv")
     # colnames(dis)
-    str(dis)
+    # str(dis)
 
-    ## 'data.frame':    1049 obs. of  35 variables:
-    ##  $ X                          : int  1 2 3 4 5 6 7 8 9 10 ...
-    ##  $ HostCode                   : Factor w/ 1049 levels "PRNTH1_20170328_PSRE_001",..: 113 872 340 755 1 230 231 866 870 346 ...
-    ##  $ Date                       : int  20170513 20170328 20170607 20170327 20170328 20170513 20170513 20170328 20170328 20170607 ...
-    ##  $ SiteCode                   : Factor w/ 10 levels "PRNTH1","PRNTH4",..: 2 9 4 8 1 3 3 9 9 4 ...
-    ##  $ SpeciesCode                : Factor w/ 2 levels "PSRE","TATO": 1 1 1 1 1 1 1 1 1 1 ...
-    ##  $ CollectionCode             : Factor w/ 53 levels "PRNTH1_20170328",..: 7 45 18 39 1 12 12 45 45 18 ...
-    ##  $ Lifestage                  : Factor w/ 2 levels "Larva","Metamorph": 1 1 1 1 1 1 1 1 1 1 ...
-    ##  $ Dissector                  : Factor w/ 5 levels "AO","CM","DC",..: 2 3 2 3 3 2 2 3 3 2 ...
-    ##  $ DissectionCondition        : Factor w/ 3 levels "Dead on Arrival",..: 3 3 3 1 3 3 3 3 3 2 ...
-    ##  $ GosnerStage                : int  40 26 26 26 26 29 26 26 26 26 ...
-    ##  $ TarichaLarvaeStage         : Factor w/ 6 levels "","2T","3T","4T",..: 1 1 1 1 1 1 1 1 1 1 ...
-    ##  $ SVL                        : num  4.58 5.13 5.29 5.41 5.42 5.45 5.6 5.74 5.94 5.95 ...
-    ##  $ TailLength                 : num  27.44 6.44 5.76 6.78 7.15 ...
-    ##  $ TotalLength                : num  32 11.6 11.1 12.2 12.6 ...
-    ##  $ Malformed                  : Factor w/ 2 levels "N","Y": 1 1 1 1 1 1 1 1 1 1 ...
-    ##  $ Sex                        : Factor w/ 3 levels "Female","Male",..: 3 3 3 3 3 3 3 3 3 3 ...
-    ##  $ collDate                   : Factor w/ 13 levels "2017-03-27","2017-03-28",..: 3 2 7 1 2 3 3 2 2 7 ...
-    ##  $ visit                      : int  2 1 3 1 1 2 2 1 1 3 ...
-    ##  $ SecYr                      : logi  NA NA NA NA NA NA ...
-    ##  $ tot.para                   : int  2 1 2 0 0 4 0 1 1 2 ...
-    ##  $ BDinf                      : int  1 0 0 0 0 0 0 1 1 0 ...
-    ##  $ aveZE                      : num  2.75 0 0 0 0 ...
-    ##  $ Alaria                     : int  0 0 0 0 0 0 0 0 0 0 ...
-    ##  $ Cephalogonimus             : int  0 0 0 0 0 0 0 0 0 0 ...
-    ##  $ Echinostoma                : int  0 0 0 0 0 2 0 0 0 1 ...
-    ##  $ Gorgoderid_Metacercaria    : int  0 0 0 0 0 0 0 0 0 0 ...
-    ##  $ Gyrinicola_batrachiensis   : int  0 0 0 0 0 3 0 0 0 0 ...
-    ##  $ Manodistomum_syntomentera  : int  0 0 0 0 0 0 0 0 0 0 ...
-    ##  $ Megalobatrachonema_moraveci: int  0 0 0 0 0 0 0 0 0 0 ...
-    ##  $ Nematode                   : int  0 0 0 0 0 0 0 0 0 0 ...
-    ##  $ Oxyurid                    : int  0 0 0 0 0 0 0 0 0 0 ...
-    ##  $ Ribeiroia_ondatrae         : int  0 0 0 0 0 0 0 0 0 0 ...
-    ##  $ Nyctotherus                : int  1 1 0 0 0 1 0 0 1 0 ...
-    ##  $ Opalina                    : int  1 0 1 0 0 1 0 1 0 0 ...
-    ##  $ Tritrichomonas             : int  0 0 1 0 0 0 0 0 0 1 ...
+Add some covariates
+-------------------
 
     dis$Pop <- paste(dis$SiteCode, dis$SpeciesCode, sep = "_") 
-    # each population is sampled multiple time so the observations are nested with in pop
+    dis$fsample <- factor(dis$visit) # for random effect
+    # each population is sampled multiple time so the observations are nested within pop
+
+    # let's get a scaled SVL (snout-vent length)
+    # in this case we want negatives to be lower than average at that time, and positives to be higher than average at that time
+    meanSVLVisitSpec <- dis %>% group_by (visit, SpeciesCode) %>% summarise(meanVSVL = mean(SVL), sdVSVL = sd(SVL))
+
+    ## Warning: package 'bindrcpp' was built under R version 3.4.4
+
+    dis <- left_join(dis, meanSVLVisitSpec, by = c("visit", "SpeciesCode"))
+    dis <- dis %>% mutate(visitScaledSVL = (SVL-meanVSVL)/sdVSVL)
+    dis$meanVSVL =NULL
+    dis$sdVSVL = NULL
+
+    #add in lat and long
+    sitedat <- read.csv("data/CoreSites.csv"
+    )
+    dis <- left_join(dis, sitedat, by = "SiteCode")
+
+    # format visit as a date
+    # first need to split out the part after the underscore (date of sample)
+    spl <- strsplit(as.character(dis$CollectionCode), "_")
+    # then format as date
+    dis$Dated <- sapply(spl, function(x) x[2]) %>% as.Date("%Y%m%d")
+
+    # get julian date
+    dates <- as.POSIXlt(dis$Dated, format = "%Y%m%d")
+    dis$jDate <-dates$yday
+
+Exploratory data analysis
+-------------------------
+
+Look at the distribution of echinostoma over time by site. SVL vs. load.
+
+How does parasite load change over time?
+
+    ggplot(data = dis) +
+      geom_jitter(aes(x=jDate, y = log(Echinostoma+.1), color = SpeciesCode))
+
+![](ip_4_Report_files/figure-markdown_strict/unnamed-chunk-4-1.png)
+
+    # ggplot(data = dis) +
+    #   geom_jitter(aes(x=visit, y = tot.para, color = SpeciesCode))
+
+It kind of looks like Echinostoma load increases over time and that TATO
+have fewer, but this relationship isn't super obvious.
+
+Let's try separating out by site to reduce some of this noise
+
+    ggplot(data = dis) +
+      geom_jitter(aes(x=jDate, y = log(Echinostoma+.01), color = SpeciesCode))+
+      facet_wrap(facets = ~SiteCode)
+
+![](ip_4_Report_files/figure-markdown_strict/unnamed-chunk-5-1.png) It
+looks like newts (TATO) don't seem to get Echinostoma at some of the
+sites (weird!)
+
+In some sites, it seems like Echinostoma count goes up with time. So
+there might be a site X species interaction. And there might be a site X
+visit interaction. It also seems like the difference between species
+changes over time, but that only happens in some sites (e.g. PRPND010).
+Yikes...that seems like a 3 way interaction. Or the interaction between
+visit\*species depends on site (random slope)?
+
+Do individuals' relative size (are they late bloomers or early bloomers)
+impact their parasite counts?
+
+    ggplot(data = dis)+
+      geom_jitter(aes(x = visitScaledSVL, y = log(Echinostoma + .1), color = SpeciesCode))+
+      facet_wrap(facets= ~SiteCode)
+
+![](ip_4_Report_files/figure-markdown_strict/unnamed-chunk-6-1.png)
+Doesn't seem like it.
+
+Does location of a pond or its longevity matter?
+
+    ggplot(data=dis)+
+      geom_jitter(aes(x=Latitude, y = log(Echinostoma+.1), color = Longevity))
+
+![](ip_4_Report_files/figure-markdown_strict/unnamed-chunk-7-1.png)
 
 Model formulation
 -----------------
 
 For now, I'll focus on question 1 with the response variable being
 `Echinostoma` (number of Echinostoma parasites found within that
-individual)
+individual) *I think that site should be nested within visit because I
+think that this is a higher level; e.g. ALL sites will be higher at
+visit 3, etc. But I'm not totally sure about this.*
+
+Individual level
+----------------
 
 At the individual level, parasite load (*y*<sub>*i*</sub>) is Poisson
-distributed with an expected mean of *μ*<sub>*i*</sub>
+distributed with an expected mean of *μ*<sub>*i*</sub>. Technically the
+data are negative-binomially (or overdispersed Poisson) - distributed,
+but I deal with that below by adding an extra error term, *ϵ*.
 
 *Equation 1*: *y*<sub>*i*</sub> ~ Poisson(*μ*<sub>*i*</sub>)
 
-The log(expected mean parasite level) is predicted by visit, species,
-snout vent length, and interaction, with each individual deviating from
-expected by *ϵ*<sub>*i*</sub>.
+The log(expected mean parasite level) is predicted by individual-level
+covariates: date, species, snout vent length, and interaction, with each
+individual deviating from expected by *ϵ*<sub>*i*</sub>.
 
 *Equation 2*: *l**o**g*(*μ*<sub>*i*</sub>) = *α*<sub>*j*\[*i*\]</sub> +
-*β*<sub>1</sub> \* *v**i**s**i**t* +
-*β*<sub>2</sub> \* *s**p**e**c**i**e**s* + *β*<sub>3</sub> \* *S**V**L*
-+ *β*<sub>4</sub> \* *v**i**s**i**t* \* *s**p**e**c**i**e**s* +
-*β*<sub>5</sub> \* *v**i**s**i**t* \* *S**V**L* + *ϵ*<sub>*i*</sub>
+*β*<sub>*j*\[*i*\]</sub>×*d**a**t**e* +
+*β*<sub>2</sub>×*s**p**e**c**i**e**s* + *β*<sub>3</sub>×*S**V**L* +
+*β*<sub>4</sub>×*v**i**s**i**t*×*s**p**e**c**i**e**s* +
+*ϵ*<sub>*i*</sub>
 
 Those deviations follow a normal distribution centered around 0 with
 variance of *σ*<sub>*ϵ*</sub><sup>2</sup>. This is the overdispersion
@@ -122,18 +174,34 @@ parameter.
 *Equation 3*: *ϵ*<sub>*i*</sub> ~ Normal(0,
 *σ*<sub>*ϵ*</sub><sup>2</sup>)
 
-Each individual is a member of a repeatedly sampled population. The
-populations are centered around the mean for that site
-(*γ*<sub>*k*\[*i*\]</sub>).:
+Sampling event level
+--------------------
 
-*Equation 4*: *α*<sub>*j*</sub> ~ Normal(*γ*<sub>*k*\[*i*\]</sub>,
-*σ*<sub>*α*</sub><sup>2</sup>)
+Each sampling event mean (*α*<sub>*j*</sub>) can be predicted from a
+linear relationship with date, but varies by a random amount. The
+relationship with date is site specific (random slope)
 
+*Equation 4*: *α*<sub>*j*\[*i*\]</sub> ~
+Normal(*μ*<sub>*α*\[*j*\]</sub>, *σ*<sub>*j*</sub><sup>2</sup>)
+
+*Equation 5*: *μ*<sub>*α*\[*j*\]</sub> = *γ*<sub>*k*\[*i*\]</sub> +
+*β*<sub>*j*</sub>\[*i*\]×*d**a**t**e*
+
+Site level
+----------
+
+Each site varies randomly from the average in the mean parasite load.
 The mean for a particular site is drawn from a distribution centered at
 the mean among sites ($\\bar{\\gamma}$):
 
-*Equation 5* *γ*<sub>*k*</sub> ~ Normal($\\bar{\\gamma}$,
-*σ*<sub>*γ*</sub><sup>2</sup>)
+*Equation 6* *γ*<sub>*k*</sub> ~ Normal($\\bar{\\omega}$,
+*σ*<sub>*ω*</sub><sup>2</sup>)
+
+The effect of visit depends on site, thus we have a random slope as
+well, at the site-level. I don't know what greek symbols to use here...
+
+*Equation 7* *β*<sub>*j*</sub> ~ Normal($\\bar{\\beta}$,
+*σ*<sub>*β*</sub><sup>2</sup>).
 
 If there were site level covariates (in the future), $\\bar{\\gamma}$
 could be predicted with another linear model with site-level covariates
@@ -142,25 +210,58 @@ could be predicted with another linear model with site-level covariates
 Stan formulation
 ----------------
 
-In stan\_glm, the model could be written as:
+Model 1: This model includes interactions between time and species and
+time and SVL. I think that the differences between species or the
+importance of SVL could vary over the course of the summer.
 
-    stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*SVL + (1|SiteCode) + (1|Pop) +
-                             (1|HostCode), data = dis,  family =poisson(link="log"))
-    summary(stan.fit)
+    stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*scale(SVL) + (1|SiteCode) + (1|CollectionCode), data = dis,  family =neg_binomial_2(link="log"))
+    stan.fit1 <- stan.fit
+    summary(stan.fit1)
     # launch_shinystan(stan.fit)
-    stan.samp <- sample(stan.fit)
-    save(stan.samp, file = "stan.fit.1.RData")
+    plot(stan.fit1)
+    stan.samp1 <- sample(stan.fit1)
+    save(stan.samp1, file = "stan.fit.1.RData")
 
 The interactions aren't significant (overlap with zero) so I will remove
 and re-fit. I'm also going to add a random slope model because I think
 the effect of species depends on site. The two species are very similar
 at some sites and very different at other sites.
 
-    stan.fit2 <- stan_glmer(Echinostoma ~ visit + SpeciesCode + SVL + (SpeciesCode|SiteCode) + (1|Pop) +
-                             (1|HostCode), data = dis,  family =poisson(link="log"))
+Can I have two random slopes for Site, if so how to specify?
+jDate|SiteCode + SpeciesCode|SiteCode doesn't work.
+
+    stan.fit2 <- stan_glmer(Echinostoma ~ visitScaledSVL + (jDate|SiteCode) + SpeciesCode*jDate + (1|CollectionCode) , data = dis,  family =neg_binomial_2(link="log"))
+
+    summary(stan.fit2)
+    # launch_shinystan(stan.fit2)
+
+Try a third model; get rid of longevity and latitude; they're not
+significant. Let's add that interaction.
+
+Technically this isn't the best way of model comparisons since I'm not
+doing this in sequence with one term dropped or added at a time. But
+these models take 20 mins to run so I am rowing impatient.
+
+    stan.fit3 <- stan_glmer(Echinostoma ~ visit + SpeciesCode + visitScaledSVL + (SpeciesCode*visit|SiteCode) + (1|fsample) , data = dis,  family =neg_binomial_2(link="log"))
+
+    summary(stan.fit3)
+    launch_shinystan(stan.fit3)
 
 Exploring model fit
 -------------------
+
+    # variance partitioning
+
+Posterior predictive checks. Simulating the model
+
+Visualization
+-------------
+
+What are the best ways to represent these data? Should I do residual
+plots?
+
+Conclusions
+-----------
 
 Next steps: Perhaps use a random slope model as well (visit|SiteCode).
 Developmental stages could perhaps be included with an interaction with

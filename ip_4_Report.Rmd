@@ -2,7 +2,7 @@
 title: "Independent Project Report"
 author: "Wynne Moss"
 date: "November 28, 2018"
-output: pdf_document
+output: md_document
 ---
 
 ```{r setup, include=FALSE}
@@ -168,19 +168,20 @@ This model includes interactions between time and species and time and SVL. I th
 
 ```{r, eval = FALSE}
 stan.fit <- stan_glmer(Echinostoma ~ visit*SpeciesCode + visit*scale(SVL) + (1|SiteCode) + (1|CollectionCode), data = dis,  family =neg_binomial_2(link="log"))
-summary(stan.fit)
+stan.fit1 <- stan.fit
+summary(stan.fit1)
 # launch_shinystan(stan.fit)
-plot(stan.fit)
-stan.samp <- sample(stan.fit)
-save(stan.samp, file = "stan.fit.1.RData")
+plot(stan.fit1)
+stan.samp1 <- sample(stan.fit1)
+save(stan.samp1, file = "stan.fit.1.RData")
 ```
 
 The interactions aren't significant (overlap with zero) so I will remove and re-fit. I'm also going to add a random slope model because I think the effect of species depends on site. The two species are very similar at some sites and very different at other sites.
 
-I also have added in the covariates Latitude and Longevity, which are pond-level covariates. 
+Can I have two random slopes for Site, if so how to specify? jDate|SiteCode + SpeciesCode|SiteCode doesn't work. 
 
 ```{r, eval = FALSE}
-stan.fit2 <- stan_glmer(Echinostoma ~ visit + SpeciesCode + visitScaledSVL +scale(Latitude) + Longevity+ (SpeciesCode|SiteCode/fsample) , data = dis,  family =neg_binomial_2(link="log"))
+stan.fit2 <- stan_glmer(Echinostoma ~ visitScaledSVL + (jDate|SiteCode) + SpeciesCode*jDate + (1|CollectionCode) , data = dis,  family =neg_binomial_2(link="log"))
 
 summary(stan.fit2)
 # launch_shinystan(stan.fit2)
