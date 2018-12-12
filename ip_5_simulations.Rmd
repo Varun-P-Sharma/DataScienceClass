@@ -237,7 +237,61 @@ stan.fit.sim3$coefficients[1:3]
 # estimated species effect is -0.46; compared to -0.4
 ```
 
+I think this might be wrong. Maybe the sample level needs to be : Site-mean + visiteffect*1
+Does it really make a difference if I do this at the individual level or not? Let's see...
+```{r}
+visit.site.means <- data.frame(SiteCode = NA, visit = 1:5, visitmean = NA)
+visit.site.means <- rep(list(visit.site.means), 10)
+visit.effect <- 0.2 # fixed effect for visit
+species.effect <- -0.4 # fixed effect for species
+
+# at each visit, we have a random visit effect (intercept) plus the fixed effect of time
+for(i in 1:nsites){
+  visit.site.means[[i]][,1]<- levels(ponddata$SiteCode)[i]
+  for(j in 1:5){
+      visit.site.means[[i]][j,3] <- rnorm(n = 1, mean = site.means.gamma[i], sd = 0.2) + j*visit.effect
+  }
+} # visit specific random effects drawn from site means
+
+site.means.df <- data.frame(SiteCode = levels(ponddata$SiteCode), ExpMean = site.means.gamma)
+visit.site.means <- do.call(rbind, visit.site.means)
+# merge these into the dataframe
+ponddata2 <- merge(ponddata, site.means.df, by = "SiteCode")
+ponddata2 <- merge(ponddata2, visit.site.means, by = c("SiteCode", "visit"))
+# add fixed effect for species (have to treat as numeric to multiply by species slope)
+ponddata2$EchinostomaExp <- ponddata2$visitmean + (as.numeric(ponddata2$SpeciesCode)-1)*species.effect
+ponddata2$EchinostomaObs<- rnbinom(n = nrow(ponddata2), mu = exp(ponddata2$EchinostomaExp), size = 2)
+ponddata2$SiteCodevisit <- paste(ponddata2$SiteCode, "_", ponddata2$visit, sep = "")
+stan.fit.sim4 <- stan_glmer(EchinostomaObs ~ visit + SpeciesCode + (1|SiteCode) + (1|SiteCodevisit), data = ponddata2,  family =neg_binomial_2(link="log"))
+```
+
+Examine fit
+```{r}
+summary(stan.fit.sim4, digits = 4)
+rand.eff.sim4.sc <- coefficients(stan.fit.sim4)$SiteCode
+rand.eff.sim4.sv <- coefficients(stan.fit.sim4)$SiteCodevisit
+
+## site level RE
+{plot(rand.eff.sim4.sc[,1]~site.means.gamma, xlab = "Actual Random Effects", ylab = "Estimated Random Effects", xlim = c(1,2.5), ylim = c(1, 2.5), main = "Site level random effects")
+abline(0,1)}  # looks bad! It's estimating a very low site-level variance! 
+
+## visit level RE
+# visit.site.means$SiteCodevisit <- paste(visit.site.means$SiteCode,"_", visit.site.means$visit, sep = "")
+# rand.eff.sim4.sv$SiteCodevisit <- rownames(rand.eff.sim4.sv)
+# rand.eff.sim4.sv <- merge(rand.eff.sim4.sv, visit.site.means, by = "SiteCodevisit")
+# {plot(visitmean~`(Intercept)`, rand.eff.sim4.sv, xlab = "Actual Random Effects", ylab = "Estimated Random Effects", main = "Visit level random effects")
+# abline(0,1)} 
+# these aren't really right so ignore them (they have fef added)
+
+## fixed effects
+stan.fit.sim4$coefficients[1:3]
+# estimated visit effect is 0.139; compared to 0.2
+# estimated species effect is -0.38; compared to -0.4
+```
+
+Estimate around visit got worse...is this just a random blip due to the simulation or did I screw this up?
 
 ## Overall impressions
 The model is pretty good at estimating fixed effects, but not so good at the random effects. Is this due to partial pooling? It's estimating a pretty low between site variance and the random effects per site are pretty small. Could be a coding error...?
 
+It doesn't really seem to matter what level you put the fixed effects on, maybe since it's all additive anyways? But I don't know.
