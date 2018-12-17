@@ -1,8 +1,10 @@
 ---
 title: "Independent Project Report"
 author: "Wynne Moss"
-date: "November 28, 2018"
-output: pdf_document
+date: "December 16, 2018"
+output: 
+  github_document:
+    pandoc_args: --webtex
 ---
 
 ```{r setup, include=FALSE}
@@ -53,15 +55,18 @@ RESPONSE VARIABLE:
 ## Display the structure of the data
 ```{r}
 dis <- read.csv("diss.data.2017.csv")
-# colnames(dis)
+colnames(dis)
 # str(dis)
 ```
 
 
-## Add some covariates
+## Clean up data and add some covariates
 ```{r}
-dis$Pop <- paste(dis$SiteCode, dis$SpeciesCode, sep = "_") 
-dis$fsample <- factor(dis$visit) # for random effect
+# first visit was in March and not all ponds were sampled; get rid of and call May the first visit
+dis <- dis%>% filter(visit > 1) %>% mutate(visit = visit-1) 
+# dis$Pop <- paste(dis$SiteCode, dis$SpeciesCode, sep = "_") # make a new column that has the population
+# dis$fsample <- factor(dis$visit) # for random effect
+
 # each population is sampled multiple time so the observations are nested within pop
 
 # let's get a scaled SVL (snout-vent length)
@@ -96,6 +101,11 @@ How does parasite load change over time?
 ggplot(data = dis) +
   geom_jitter(aes(x=jDate, y = log(Echinostoma+.1), color = SpeciesCode))
 
+
+ggplot(data = dis) +
+  geom_jitter(aes(x=jDate, y = tot.para, color = SpeciesCode))
+
+
 # ggplot(data = dis) +
 #   geom_jitter(aes(x=visit, y = tot.para, color = SpeciesCode))
 ```
@@ -107,6 +117,40 @@ Let's try separating out by site to reduce some of this noise
 ggplot(data = dis) +
   geom_jitter(aes(x=jDate, y = log(Echinostoma+.01), color = SpeciesCode))+
   facet_wrap(facets = ~SiteCode)
+
+
+ggplot(data = dis) + 
+  geom_jitter(aes(x=jDate, y = log(Ribeiroia_ondatrae+.01), color = SpeciesCode))+
+  geom_smooth(aes(x=jDate, y = log(Ribeiroia_ondatrae+.01), color = SpeciesCode))+
+  facet_wrap(facets = ~SiteCode)
+
+ggplot(data = dis) + 
+  geom_jitter(aes(x=jDate, y = BDinf, color = SpeciesCode))+
+  geom_smooth(aes(x=jDate, y = BDinf, color = SpeciesCode))+
+  facet_wrap(facets = ~SiteCode)
+
+
+ggplot(data = dis) + 
+  geom_jitter(aes(x=jDate, y = log(aveZE+1), color = SpeciesCode))+
+  geom_smooth(aes(x=jDate, y = log(aveZE+1), color = SpeciesCode))
+
+
+ggplot(data = dis) + 
+  geom_jitter(aes(x=jDate, y = log(Ribeiroia_ondatrae+.1), color = SpeciesCode))+
+  geom_smooth(aes(x=jDate, y = log(Ribeiroia_ondatrae+.1), color = SpeciesCode))
+
+ggplot(data = dis) +
+  geom_jitter(aes(x=jDate, y = tot.para, color = SpeciesCode))+
+  geom_smooth(aes(x=jDate, y= tot.para, color = SpeciesCode))+
+  facet_wrap(facets = ~SiteCode)
+
+ggplot(data = dis) +
+  geom_jitter(aes(x=jDate, y = tot.para, color = SpeciesCode))+
+  geom_smooth(aes(x=jDate, y= tot.para, color = SpeciesCode))
+
+ggplot(data = dis)+
+  geom_jitter(aes(x=Latitude, y = log(Echinostoma+.01), color = SpeciesCode))+
+  facet_wrap(facets = ~visit)
 ```
 It looks like newts (TATO) don't seem to get Echinostoma at some of the sites (weird!)
 
@@ -183,21 +227,17 @@ The interactions aren't significant (overlap with zero) so I will remove and re-
 Can I have two random slopes for Site, if so how to specify? jDate|SiteCode + SpeciesCode|SiteCode doesn't work. 
 
 ```{r, eval = FALSE}
-stan.fit2 <- stan_glmer(Echinostoma ~ visitScaledSVL + (jDate|SiteCode) + SpeciesCode*jDate + (1|CollectionCode) , data = dis,  family =neg_binomial_2(link="log"))
+# this model doesn't seem to work...
+
+stan.fit2 <- stan_glmer(Echinostoma ~ visitScaledSVL + (visit|SiteCode) + SpeciesCode*visit + (1|CollectionCode) , data = dis,  family =neg_binomial_2(link="log"))
 
 summary(stan.fit2)
+stan.samp2<- sample(stan.fit2)
+save(stan.samp2, file = "stan.fit.2.RData")
+
 # launch_shinystan(stan.fit2)
 ```
 
-Try a third model; get rid of longevity and latitude; they're not significant. Let's add that interaction.
-
-Technically this isn't the best way of model comparisons since I'm not doing this in sequence with one term dropped or added at a time. But these models take 20 mins to run so I am rowing impatient.
-```{r, eval = FALSE}
-stan.fit3 <- stan_glmer(Echinostoma ~ visit + SpeciesCode + visitScaledSVL + (SpeciesCode*visit|SiteCode) + (1|fsample) , data = dis,  family =neg_binomial_2(link="log"))
-
-summary(stan.fit3)
-launch_shinystan(stan.fit3)
-```
 
 ## Exploring model fit
 ```{r}

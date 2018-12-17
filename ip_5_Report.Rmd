@@ -1,0 +1,529 @@
+---
+title: "Independent Project Report"
+author: "Wynne Moss"
+date: "December 16, 2018"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rstanarm)
+library(ggplot2)
+library(tidyr)
+library(lme4)
+library(rstan)
+library(dplyr)
+library(date)
+library(rethinking)
+options(mc.cores = parallel::detectCores())
+```
+
+# The data
+SUMMARY OF DATASET: I quantified parasite communities across 10 different pond sites in the East Bay of California; each site was visited 4-5 times within the 2017 summer (one site dried up and was only visited 3 times). At each visit I collected 8-12 individuals from 2 amphibian species. Individuals were measured and parasite infection was quantified.
+
+GROUPING VARIABLES: 
+
+  * Site (10 ponds) - this is a random variable, coded as `SiteCode`
+  
+  * Sample (5 samples per site) - this is a random variable, coded as `CollectionCode`
+
+PREDICTOR VARIABLES:
+
+  * Species (2 species) - coded as `SpeciesCode`. Host individuals are either PSRE (Pacific chorus frog, *Pseudacris regilla*) or TATO (California newt, *Taricha torosa*)
+  
+  * Body size (snout-vent-length) - A continuous variable (fixed effect) at the individual level. I scaled this within each visit, so that individuals with a positive score are larger than average at that time of year, and individuals with a negative score are smaller than average at that time of year (delayed growth). Scaled variable is called `siteScaledSVL`.
+  
+  * `visit` - A continuous variable (though could be treated as a factor if the relationship is non linear). I could use julian date too, but since visits are equally spaced (every 2.5 weeks) I am treating visit number as a numeric variable.
+  
+  * `Latitude` - A continuous variable that is scaled, which describes the location at which an individual was sampled. All individuals from the same pond have the same latitude.
+  
+
+RESPONSE VARIABLE:
+
+  * The number of parasite species found within an individual; coded as `tot.para`. There were 12 possible parasite species identified in this study, and many individuals had more than one parasite.
+
+![Experimental Design](ip_fig_design.png)
+
+# Questions
+1) Does the impact of species and body size change over the course of the summer (interact with visit)? That is are there different dynamics driving parasite richness at the beginning vs. end of summer?
+2) How much of the variation in parasite richness is explained by visit-level, species-level, site-level, or individual-level attributes?
+3) How does parasite richness change over time and with host species?
+
+# Data Exploration
+Overall, I want to visualize how within-host parasite richness changes over time, location, species, and body size.
+
+## Display the structure of the data
+```{r}
+dis <- read.csv("diss.data.2017.csv")
+colnames(dis)
+# str(dis)
+```
+
+
+## Clean up data and add some covariates
+```{r}
+# first visit was in March and not all ponds were sampled; get rid of and call May the first visit
+dis <- dis%>% filter(visit > 1) %>% mutate(visit = visit-1) 
+
+# let's get a scaled SVL (snout-vent length)
+# in this case we want negatives to be lower than average at that time, and positives to be higher than average at that time
+meanSVLVisitSpec <- dis %>% group_by (visit, SpeciesCode) %>% summarise(meanVSVL = mean(SVL), sdVSVL = sd(SVL))
+dis <- left_join(dis, meanSVLVisitSpec, by = c("visit", "SpeciesCode"))
+dis <- dis %>% mutate(visitScaledSVL = (SVL-meanVSVL)/sdVSVL)
+dis$meanVSVL =NULL
+dis$sdVSVL = NULL
+# visitScaledSVL is an individual's body length relative to its cohort at that time.
+
+# add in lat and long
+sitedat <- read.csv("data/CoreSites.csv"
+)
+dis <- left_join(dis, sitedat, by = "SiteCode")
+
+# format visit as a date
+# first need to split out the part after the underscore (date of sample)
+spl <- strsplit(as.character(dis$CollectionCode), "_")
+# then format as date
+dis$Dated <- sapply(spl, function(x) x[2]) %>% as.Date("%Y%m%d")
+
+# get julian date
+dates <- as.POSIXlt(dis$Dated, format = "%Y%m%d")
+dis$jDate <-dates$yday
+```
+
+### Plot 1: Distribution of Response Variable
+Overall, how is parasite richness within a host distributed?
+```{r, echo = FALSE, message = FALSE}
+ggplot(data=dis)+
+  geom_histogram(aes(tot.para, fill = SpeciesCode), position = "identity")+
+  facet_wrap(facets = ~SpeciesCode)+
+  xlab("Parasite Richness")
+```
+
+These histograms look pretty Poisson-y and not necessarily overdispersed. 
+
+
+### Plot 2: Richness vs. Time
+Plot parasite richness as a function of time and species. Seems like frogs (PSRE) get more parasites than newts (TATO). There might be a non linear relationship for frogs, where they peak in mid-summer and then clear parasites.
+```{r, echo = FALSE, warning=FALSE, message = FALSE}
+ggplot(data = dis) +
+  geom_jitter(aes(x=jDate, y = tot.para, color = SpeciesCode), width = 2, height = .2)+
+  facet_wrap(facets= ~SpeciesCode)+
+  geom_smooth(aes(x=jDate, y = tot.para, color = SpeciesCode))+
+  xlab("Julian Date")+
+  ylab("Within-host Parasite Richness")
+```
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+ggplot(data = dis) +
+  geom_jitter(aes(x=jDate, y = tot.para, color = SpeciesCode), width = 2, height = .2)+
+  facet_wrap(facets= ~SiteCode)+
+  geom_smooth(aes(x=jDate, y = tot.para, color = SpeciesCode))+
+  xlab("Julian Date")+
+  ylab("Within-host Parasite Richness")
+```
+
+### Plot 3: Richness vs. Body Size
+There's variation within each species at each time point. Is this due to individual level characteristics (e.g. body size) or site-level characteristics (the site that an individual is from)?
+
+Check individual-level characteristic: body size, or snout-vent length (SVL)
+
+```{r, echo = FALSE, message = FALSE}
+ggplot(data = dis) +
+  geom_jitter(aes(x=SVL, y = tot.para, color = SpeciesCode))+
+  geom_smooth(aes(x=SVL, y = tot.para, color = SpeciesCode))+
+  facet_wrap(facets = ~SiteCode)+
+  ylab("Within-host Parasite Richness")+
+  xlab("Body size (snout-vent length)")
+
+```
+
+I don't see any clear patterns here. 
+
+
+```{r, echo = FALSE, message = FALSE}
+ggplot(data = dis) +
+  geom_jitter(aes(x=SVL, y = tot.para, color = SpeciesCode))+
+  geom_smooth(aes(x=SVL, y = tot.para, color = SpeciesCode))+
+  facet_wrap(facets = ~SpeciesCode)+
+  ylab("Within-host Parasite Richness")
+
+```
+
+Based on this, I think I need to scale SVL (perhaps separately by species). It looks like parasite richness increases with SVL for frogs, but not for newts (or the slope is shallower). In addition, SVL is very correlated to time. Can we have both of these predictors? Maybe if we use the visitScaledSVL...
+
+```{r, echo = FALSE, message = FALSE}
+ggplot(data = dis) +
+  geom_jitter(aes(x=visitScaledSVL, y = tot.para, color = SpeciesCode))+
+  geom_smooth(aes(x=visitScaledSVL, y = tot.para, color = SpeciesCode))+
+  facet_wrap(facets = ~SiteCode)+
+  xlab("Scaled body size")+
+  ylab("Within-host parasite richness")
+
+ggplot(data = dis) +
+  geom_jitter(aes(x=visitScaledSVL, y = tot.para, color = SpeciesCode))+
+  geom_smooth(aes(x=visitScaledSVL, y = tot.para, color = SpeciesCode))+
+  xlab("Scaled body size")+
+  ylab("Within-host parasite richness")
+
+ggplot(data = dis) +
+  geom_jitter(aes(x=visitScaledSVL, y = tot.para, color = SpeciesCode))+
+  geom_smooth(aes(x=visitScaledSVL, y = tot.para, color = SpeciesCode))+
+  facet_wrap(facets = ~visit)+
+  xlab("Scaled body size")+
+  ylab("Within-host parasite richness")
+
+
+```
+
+From these plots, I think that frogs have a positive relationship with scaled-body size. The earlier developing/bigger frogs tend to have more parasites. This doesn't look to be true for newts. There doesn't seem to be an interaction between size and visit (which was a main question for me). That is, it doesn't look like size is more important early in the summer.
+
+### Plot 4: Pond location and parasite richness
+Does location of a pond influence the parasite richness within individuals? Does importance of location change over time?
+```{r, echo = FALSE, message = FALSE}
+ggplot(data=dis)+
+  geom_jitter(aes(x=Latitude, y = tot.para, color = SpeciesCode))+
+  facet_wrap(facets = ~SpeciesCode)+
+  ylab("Within-host Parasite Richness")
+
+
+
+ggplot(data=dis)+
+  geom_jitter(aes(x=Latitude, y = tot.para, color = SpeciesCode))+
+  facet_wrap(facets = ~visit)+
+  ylab("Within-host Parasite Richness")
+
+
+```
+
+It seems like latitude does matter! The higher latitude sites seem to have fewer parasites. 
+
+```{r, echo = FALSE, message = FALSE}
+ggplot(data=dis)+
+  geom_jitter(aes(x=Longitude, y = tot.para, color = SpeciesCode))+
+  facet_wrap(facets = ~SpeciesCode)+
+  ylab("Within-host Parasite Richness")
+
+```
+
+Not seeing as strong of a pattern with longitude.
+
+## Overall impressions from EDA
+It seems like species, site location, and body size all influence the parasite richness within a host. I'm interested in which of these are most important and how they vary over time. 
+
+# Model formulation
+Below is the model formulation for the most complex model I want to run. I think this may be in danger of overfitting, so I will trim from here. 
+
+Note: this is rendering weirdly in the knitted github document, and trying to fix it is giving knitting errors. 
+
+Overall model:
+
+$Parasite Richness$ ~ $Species$ + $Date$ + $Date^2$ + $Species$ x $Date$ + $Species$ x $Date^2$ + $Latitude$ + $SVL$ + $Species$ x $SVL$ + (1|$Site$) + (1|$Sample$)
+
+**Response Variable:** The response variable I want to model is within-host parasite richness (`tot.para`), which is Poisson-distributed count data. 
+
+**Hierarchical Structure:**
+
+  * Pond level: the mean pond level parasite richness is predicted by `latitude` but also has a random component.
+  
+  * Sample level: the intercept for the sample-level mean is drawn randomly from the pond-level mean with fixed effect for `date` (parasite richness increases with date). The effect of date might need to be polynomial since it looks like it has a hump shape. In addition, there is a different effect of date for each species
+  
+  * Individual level: the individual-level richnesses are predicted by `species` (PSRE have more), `body size`, and the intercept is the sample-level mean.
+  
+  
+(I'm still not sure how to format the greek symbols and subscripts here).
+
+## Individual level
+At the individual level, parasite richness ($y_i$) is Poisson distributed with an expected mean of $\mu_i$. 
+
+*Equation 1*: $y_i$ ~ Poisson($\mu_{i}$) 
+
+The log(parasite richness) is predicted by individual-level covariates: species, scaled snout vent length, and interaction. Since the effect of visit is at the site-level, but it interacts with species, I believe that the interaction must go at this level too:
+
+*Equation 2*:  $log(\mu_i)$ = $\mu_{j[i]}$ + $\beta_1$$\times$species + $\beta_2$$\times$scaledSVL + $\beta_3$$\times$species$\times$scaledSVL + $\beta_4$$\times$species$\times$date + $\beta_5$$\times$species$\times$date$^2$
+
+Individual i's parasite load is predicted by the mean of the sample it came from [j] plus the fixed effects. 
+
+## Sampling event level
+Each sampling event mean ($\mu_{j}$) can be predicted from a polynomial relationship with date, but varies by a random amount. The effect of date depends on species (which is why there is an interaction at the individual level).
+
+The intercept represents the random parasite richness at sampling event j from site k.
+
+*Equation 3*: $\mu_j$ = $\alpha_{j[k]}$ + $\beta_6$$\times$date + $\beta_7$$\times$date$^2$
+
+The sample-level mean ($\alpha_j$) from site k is drawn randomly from the mean for that site ($\gamma_k$)
+
+*Equation 4*
+$\alpha_{j[k]}$ ~ Normal($\mu_{\gamma[k]}$, $\sigma^2_\alpha$)
+
+## Site level
+The expected mean for a site k is predicted by latitude
+
+*Equation 5*: $\mu_{\gamma[k]}$ = $\gamma_{k}$ + $\beta_8$$\times$latitude
+
+The random effect for site k is drawn from the across-site average
+
+*Equation 6*: $\gamma_k$ ~ Normal($\bar{\gamma}$, $\sigma^2_\gamma$)
+
+# Fitting the model
+
+First, let's try this using `glmer`:
+```{r, message = FALSE, warning = FALSE}
+glmer.fit1 <- glmer(tot.para~visit*SpeciesCode + I(visit^2)*SpeciesCode +  SpeciesCode*visitScaledSVL + scale(Latitude) + (1|CollectionCode)+(1|SiteCode), data = dis, family = "poisson")
+# convergence issues!
+summary(glmer.fit1)
+```
+
+## Stan formulation
+
+### Model fit 1: full model
+```{r, eval = FALSE, message = FALSE}
+stan.fit.1 <- stan_glmer(tot.para ~ visit*SpeciesCode + I(visit^2)*SpeciesCode + SpeciesCode*visitScaledSVL + scale(Latitude) + (1|CollectionCode)+ (1|SiteCode), data = dis,  family = "poisson")
+saveRDS(stan.fit.1, "stan.fit.1.rds")
+```
+
+### Model fit 1: output
+```{r}
+stan.fit.1 <- readRDS("stan.fit.1.rds")
+stan.fit.1.samp <- sample(stan.fit.1)
+print(summary(stan.fit.1)[,c(1,3,9,10)],digits=3)
+ci95 <- posterior_interval(stan.fit.1, prob = 0.95)
+round(ci95, 2)[1:9,]
+# interaction terms don't seem specific
+cov2cor(vcov(stan.fit.1))
+# some high correlations with interaction terms
+samples <- extract(stan.fit.1$stanfit)
+```
+
+Posterior plots:
+```{r}
+samplesdf <- data.frame(samples$alpha,samples$beta)
+names(samplesdf) <- c("alpha", "beta 1: visit", "beta 2: species", "beta 3: visit^2",
+                      "beta 4: scaled SVL", "beta 5: latitude", "beta 6: visit x species",
+                      "beta 7: species x visit^2", "beta 8: species x scaled SVL")
+samplesdf %>% 
+    gather(key = "parameter", value = "sample") %>%
+    ggplot() +
+    geom_histogram(mapping = aes(x=sample,y=stat(density), fill = parameter),
+                   bins=75, colour = "black", lwd =.1) +
+    geom_vline(xintercept = 0, colour = "red")+
+    facet_wrap(facets = ~ parameter,scales="free")+
+    guides(fill= FALSE)
+```
+
+The posteriors look pretty good in terms of shape (not bimodal). The interaction terms do not seem significant (overlap 0 quite a bit).
+
+### Model fit 2: reduced model without 2nd order interaction visit x species
+
+Get rid of the 2nd order interaction term (visit ^2 x species). I'm not totally sure if it's ok to remove one of the interaction terms but not the other (visit x species). 
+
+```{r, eval = FALSE, message = FALSE}
+stan.fit.2 <- stan_glmer(tot.para ~ visit*SpeciesCode + I(visit^2) + SpeciesCode*visitScaledSVL + scale(Latitude) + (1|CollectionCode)+ (1|SiteCode), data = dis,  family = "poisson")
+saveRDS(stan.fit.2, "stan.fit.2.rds")
+```
+
+```{r}
+stan.fit.2 <- readRDS("stan.fit.2.rds")
+stan.fit.2.samp <- sample(stan.fit.2)
+print(summary(stan.fit.2)[,c(1,3,9,10)],digits=3)
+ci95 <- posterior_interval(stan.fit.2, prob = 0.95)
+round(ci95, 2)[1:8,]
+cov2cor(vcov(stan.fit.2))
+samples2 <- extract(stan.fit.2$stanfit)
+```
+
+### Model fit 3: reduced model without 2nd order interaction and without species x SVL interaction
+```{r, eval = FALSE, message = FALSE}
+stan.fit.3 <- stan_glmer(tot.para ~ visit*SpeciesCode + I(visit^2) + SpeciesCode + visitScaledSVL + scale(Latitude) + (1|CollectionCode)+ (1|SiteCode), data = dis,  family = "poisson")
+saveRDS(stan.fit.3, "stan.fit.3.rds")
+```
+
+### Model fit 4: reduced model without species x SVL interaciton but with the 2nd order interaction
+```{r, eval = FALSE, message = FALSE}
+stan.fit.4 <- stan_glmer(tot.para ~ visit*SpeciesCode + I(visit^2)*SpeciesCode + SpeciesCode + visitScaledSVL + scale(Latitude) + (1|CollectionCode)+ (1|SiteCode), data = dis,  family = "poisson")
+saveRDS(stan.fit.4, "stan.fit.4.rds")
+```
+
+### Model fit 5: a reduced model with fit 3 minus the latitude
+```{r, eval = FALSE, message = FALSE}
+stan.fit.5<- stan_glmer(tot.para ~ visit*SpeciesCode + I(visit^2) + SpeciesCode + visitScaledSVL + (1|CollectionCode)+ (1|SiteCode), data = dis,  family = "poisson")
+saveRDS(stan.fit.5, "stan.fit.5.rds")
+```
+
+### Model fit 6: a null model with random effects only
+```{r, eval = FALSE, message = FALSE}
+stan.fit.6<- stan_glmer(tot.para ~ 1+ (1|CollectionCode)+ (1|SiteCode), data = dis,  family = "poisson")
+saveRDS(stan.fit.6, "stan.fit.6.rds")
+```
+
+### Model fit 7: try removing the sample random effect
+I'm not sure if this is statistically sound, but many of the random effects overlap 0. When I did my simulation model, it was hard to re-capture these random effects. Maybe taking them out is valid, if there isn't much variance at the sample-level. 
+```{r, eval = FALSE, message = FALSE}
+stan.fit.7 <- stan_glmer(tot.para ~ visit*SpeciesCode + I(visit^2) + SpeciesCode + visitScaledSVL +  (1|SiteCode), data = dis,  family = "poisson")
+# wow -- this model runs way faster! 
+saveRDS(stan.fit.7, "stan.fit.7.rds")
+```
+
+See below -- removing this random effect is not good! 
+
+### Compare the models:
+```{r, warning = FALSE, message = FALSE}
+stan.fit.3 <- readRDS("stan.fit.3.rds")
+stan.fit.4 <- readRDS("stan.fit.4.rds")
+stan.fit.5 <- readRDS("stan.fit.5.rds")
+stan.fit.6 <- readRDS("stan.fit.6.rds")
+stan.fit.7 <- readRDS("stan.fit.7.rds")
+l1 <- loo(stan.fit.1, k_threshold = 0.7) # looic 2763.5
+l2 <- loo(stan.fit.2, k_threshold = 0.7) # looic 2762.8
+l3 <- loo(stan.fit.3, k_threshold = 0.7) # looic 2762.4
+l4 <- loo(stan.fit.4, k_threshold = 0.7) # looic 2762.2
+l5 <- loo(stan.fit.5, k_threshold = 0.7) # looic 2761.2
+l6 <- loo(stan.fit.6, k_threshold = 0.7) # looic 3146.6
+l7 <- loo(stan.fit.7, k_threshold = 0.7) # looic 2825.3
+
+compare_models(l1, l2, l3, l4, l5, l6, l7)
+```
+
+These models seem pretty similar but fit number 5 seems like the best. Let's further explore this one.
+
+# Exploring model fit
+The best model has visit, species, visit^2, SVL, and visit*species as predictors.
+
+```{r}
+stan.fit.5.samp <- sample(stan.fit.5)
+print(summary(stan.fit.5)[,c(1,3,9,10)],digits=3)
+ci95 <- posterior_interval(stan.fit.5, prob = 0.95)
+round(ci95, 2)[1:6,]
+cov2cor(vcov(stan.fit.5))
+samples <- rstan::extract(stan.fit.5$stanfit)
+```
+
+Posterior plots:
+```{r}
+samplesdf <- data.frame(samples$alpha,samples$beta)
+names(samplesdf) <- c("alpha", "beta 1: visit", "beta 2: species", "beta 3: visit^2",
+                      "beta 4: scaled SVL", "beta 5: visit x species")
+samplesdf %>% 
+    gather(key = "parameter", value = "sample") %>%
+    ggplot() +
+    geom_histogram(mapping = aes(x=sample,y=stat(density), fill = parameter),
+                   bins=75, colour = "black", lwd =.1) +
+    geom_vline(xintercept = 0, colour = "red")+
+    facet_wrap(facets = ~ parameter,scales="free")+
+    guides(fill= FALSE)
+```
+
+The coefficients do not overlap 0, the distributions seem smooth. 
+
+Trace plots:
+```{r, message = FALSE}
+intercept_trace <- rstan::extract(stan.fit.5$stanfit,pars="alpha",permuted=FALSE,inc_warmup=TRUE)
+{plot(NA,NA,type="n", xlab = "", ylab = "", main = "Intercept", ylim=range(intercept_trace),xlim=c(0,length(intercept_trace[,1,1])))
+for ( i in 1:4 ) {
+    lines(intercept_trace[,i,1],col=i)  
+}
+}
+traceplot(stan.fit.5$stanfit)
+```
+
+The traceplots seem pretty good (well-mixed). 
+
+The coefficient estimates I would report:
+```{r}
+posterior_interval(stan.fit.5,prob=0.95)[1:6,]
+```
+
+Visualize using the predict function
+
+
+Plot the relationship between visit (time) and number of parasites, for each species. Hold body size at the average.
+```{r}
+fake.data <- data.frame(expand.grid(SpeciesCode = c("PSRE", "TATO"), visit = 1:5, 
+                                    visitScaledSVL = 0))
+head(fake.data)
+str(samplesdf)
+fake.data$pred.med <- NA
+fake.data$pred.lo <- NA
+fake.data$pred.hi <- NA
+
+fake.data.mm <- model.matrix(~visit*SpeciesCode + I(visit^2) + SpeciesCode + visitScaledSVL,  data = fake.data[1:3])
+
+fake.data.preds <- matrix(nrow = nrow(fake.data), ncol = 4000)
+# there's probably an "apply" way to do this but I don't know it.
+for(i in 1:nrow(samplesdf)){
+  # draw a sample from the posterior
+  # predict at each row of fake.data
+  fake.data.preds[, i] <- exp(fake.data.mm %*% t(samplesdf[i,]))
+}
+# each row is a specific set of predictors
+# each column is a draw from the posterior
+# for each row, we want the column median
+fake.data$pred.med <- apply(fake.data.preds, 1, median)
+fake.data$pred.lo <- apply(fake.data.preds, 1, HPDI)[1,]
+fake.data$pred.hi <- apply(fake.data.preds, 1, HPDI)[2,]
+
+fake.data$fvisitScaledSVL <- factor(fake.data$visitScaledSVL)
+ggplot(data = subset(fake.data, visitScaledSVL == 0))+
+  geom_ribbon(mapping=aes(x=visit ,ymin=pred.lo,ymax=pred.hi, fill = SpeciesCode),
+  alpha=0.2)+
+  geom_line(aes(x=visit, y = pred.med, color = SpeciesCode))+
+  geom_jitter(data = dis, aes(x=visit, y = tot.para, color = SpeciesCode), width = .3, height = .3, size = .5)+
+  facet_wrap(facets = ~SpeciesCode)+
+  xlab("visit")+
+  ylab("Within-host parasite richness")
+```
+
+Plot the relationship between relative body size (visitScaledSVL) and number of parasites, at each visit.
+```{r}
+fake.data2 <- data.frame(expand.grid(SpeciesCode = c("PSRE", "TATO"), visit = 1:5, 
+                                    visitScaledSVL = seq(-4,4, length.out = 100)))
+head(fake.data2)
+str(samplesdf)
+fake.data2$pred.med <- NA
+fake.data2$pred.lo <- NA
+fake.data2$pred.hi <- NA
+
+fake.data.mm.2 <- model.matrix(~visit*SpeciesCode + I(visit^2) + SpeciesCode + visitScaledSVL,  data = fake.data2[1:3])
+
+fake.data.preds2 <- matrix(nrow = nrow(fake.data2), ncol = 4000)
+# there's probably an "apply" way to do this but I don't know it.
+for(i in 1:nrow(samplesdf)){
+  # draw a sample from the posterior
+  # predict at each row of fake.data
+  fake.data.preds2[, i] <- exp(fake.data.mm.2 %*% t(samplesdf[i,]))
+}
+# each row is a specific set of predictors
+# each column is a draw from the posterior
+# for each row, we want the column median
+fake.data2$pred.med <- apply(fake.data.preds2, 1, median)
+fake.data2$pred.lo <- apply(fake.data.preds2, 1, HPDI)[1,]
+fake.data2$pred.hi <- apply(fake.data.preds2, 1, HPDI)[2,]
+
+ggplot(data = subset(fake.data2))+
+  geom_line(aes(x=visitScaledSVL, y = pred.med, color = SpeciesCode))+
+  geom_ribbon(mapping=aes(x=visitScaledSVL ,ymin=pred.lo,ymax=pred.hi, fill = SpeciesCode),
+  alpha=0.2)+
+  geom_jitter(data = dis, aes(x=visitScaledSVL, y = tot.para, color = SpeciesCode), width = .3, height = .3, size = .5)+
+  facet_wrap(facets = ~visit)+
+  xlab("Scaled Body Size")+
+  ylab("Within-host parasite richness")
+```
+
+How important are site-level differences?
+```{r}
+SiteEffects <- names(stan.fit.5$coefficients)[55:64] # 55:64
+samplesdf.r <- data.frame(samples$b)[, c(51:60)]
+names(samplesdf.r) <- levels(dis$SiteCode)
+samplesdf.r %>% 
+    gather(key = "parameter", value = "sample") %>%
+    ggplot() +
+    geom_histogram(mapping = aes(x=sample,y=stat(density), fill = parameter),
+                   bins=75, colour = "black", lwd =.1) +
+    geom_vline(xintercept = 0, colour = "red")+
+    facet_wrap(facets = ~ parameter,scales="free")+
+    guides(fill= FALSE)
+
+```
+
+## Conclusions
+The parasite richness inside a host individual depends on what species the host is. Pacific chorus frogs have higher parasite richness. In other words, they support a more diverse community of parasites. The date an individual was sampled also matters. Visit (which is a proxy for date) has a monotonic relationship with parasite richness; peaking in mid-summer and then tapering off. An individual's relative size matters -- individuals who were larger relative to others in a sample had higher parasite loads. Note that scaling this means that body size is not correlated with visit, though it probably does mean that the individual was older relative to others in the sample and thus was exposed for longer. Latitude doesn't matter (which is suprising given the plot!), and the random effects for each site seem relatively small for most sites. What I conclude from this is that the individual level factor (time, body size) matters a lot in terms of an individual's parasite richness, and the site that they are at doesn't matter quite as much, except for a few extreme sites (e.g. PRPND010)
+
