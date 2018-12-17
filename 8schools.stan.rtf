@@ -1,0 +1,31 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf470
+{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;\red87\green96\blue106;\red244\green246\blue249;\red27\green31\blue34;
+\red91\green40\blue180;\red203\green35\blue57;\red7\green68\blue184;}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\sl380\partightenfactor0
+
+\f0\fs28 \cf2 \cb3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 // save as 8schools.stan\cf4 \strokec4 \
+\pard\pardeftab720\sl380\partightenfactor0
+\cf5 \strokec5 data\cf4 \strokec4  \{\
+  \cf6 \strokec6 int<lower\cf4 \strokec4 =\cf7 \strokec7 0\cf6 \strokec6 >\cf4 \strokec4  J; \cf2 \strokec2 // number of schools\cf4 \strokec4 \
+  \cf6 \strokec6 real\cf4 \strokec4  y[J]; \cf2 \strokec2 // estimated treatment effects\cf4 \strokec4 \
+  \cf6 \strokec6 real<lower\cf4 \strokec4 =\cf7 \strokec7 0\cf6 \strokec6 >\cf4 \strokec4  sigma[J]; \cf2 \strokec2 // s.e. of effect estimates\cf4 \strokec4 \
+\}\
+\cf5 \strokec5 parameters\cf4 \strokec4  \{\
+  \cf6 \strokec6 real\cf4 \strokec4  mu;\
+  \cf6 \strokec6 real<lower\cf4 \strokec4 =\cf7 \strokec7 0\cf6 \strokec6 >\cf4 \strokec4  tau;\
+  \cf6 \strokec6 real\cf4 \strokec4  eta[J];\
+\}\
+\cf5 \strokec5 transformed parameters\cf4 \strokec4  \{\
+  \cf6 \strokec6 real\cf4 \strokec4  theta[J];\
+  \cf6 \strokec6 for\cf4 \strokec4  (j \cf6 \strokec6 in\cf4 \strokec4  \cf7 \strokec7 1\cf6 \strokec6 :\cf4 \strokec4 J)\
+    theta[j] \cf6 \strokec6 =\cf4 \strokec4  mu \cf6 \strokec6 +\cf4 \strokec4  tau \cf6 \strokec6 *\cf4 \strokec4  eta[j];\
+\}\
+\cf5 \strokec5 model\cf4 \strokec4  \{\
+  \cf6 \strokec6 target\cf4 \strokec4  \cf6 \strokec6 +=\cf4 \strokec4  \cf7 \strokec7 normal_lpdf\cf4 \strokec4 (eta | \cf7 \strokec7 0\cf4 \strokec4 , \cf7 \strokec7 1\cf4 \strokec4 );\
+  \cf6 \strokec6 target\cf4 \strokec4  \cf6 \strokec6 +=\cf4 \strokec4  \cf7 \strokec7 normal_lpdf\cf4 \strokec4 (y | theta, sigma);\
+\}\
+}
