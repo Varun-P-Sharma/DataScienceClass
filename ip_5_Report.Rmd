@@ -44,6 +44,7 @@ RESPONSE VARIABLE:
 
 ![Experimental Design](ip_fig_design.png)
 
+
 # Questions
 1) Does the impact of species and body size change over the course of the summer (interact with visit)? That is are there different dynamics driving parasite richness at the beginning vs. end of summer?
 2) How much of the variation in parasite richness is explained by visit-level, species-level, site-level, or individual-level attributes?
