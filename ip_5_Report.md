@@ -186,7 +186,7 @@ At the individual level, parasite richness (*y*<sub>*i*</sub>) is Poisson distri
 
 The log(parasite richness) is predicted by individual-level covariates: species, scaled snout vent length, and interaction. Since the effect of visit is at the site-level, but it interacts with species, I believe that the interaction must go at this level too:
 
-*Equation 2*: *l**o**g*(*μ*<sub>*i*</sub>) = *μ*<sub>*j*\[*i*\]</sub> + *β*<sub>1</sub>×species + *β*<sub>2</sub>×scaledSVL + *β*<sub>3</sub>×species×scaledSVL + *β*<sub>4</sub>×species×date + *β*<sub>5</sub>×species×date**<sup>2</sup>
+*Equation 2*: log(*μ*<sub>*i*</sub>) = *μ*<sub>*j*\[*i*\]</sub> + *β*<sub>1</sub>×species + *β*<sub>2</sub>×scaledSVL + *β*<sub>3</sub>×species×scaledSVL + *β*<sub>4</sub>×species×date + *β*<sub>5</sub>×species×date^2
 
 Individual i's parasite load is predicted by the mean of the sample it came from \[j\] plus the fixed effects.
 
@@ -197,7 +197,7 @@ Each sampling event mean (*μ*<sub>*j*</sub>) can be predicted from a polynomial
 
 The intercept represents the random parasite richness at sampling event j from site k.
 
-*Equation 3*: *μ*<sub>*j*</sub> = *α*<sub>*j*\[*k*\]</sub> + *β*<sub>6</sub>×date + *β*<sub>7</sub>×date**<sup>2</sup>
+*Equation 3*: *μ*<sub>*j*</sub> = *α*<sub>*j*\[*k*\]</sub> + *β*<sub>6</sub>×date + *β*<sub>7</sub>×date^2
 
 The sample-level mean (*α*<sub>*j*</sub>) from site k is drawn randomly from the mean for that site (*γ*<sub>*k*</sub>)
 
@@ -1075,7 +1075,45 @@ posterior_interval(stan.fit.5,prob=0.95)[1:6,]
     ## visitScaledSVL         0.01822455  0.11758682
     ## visit:SpeciesCodeTATO  0.11194703  0.28041382
 
-Visualize using the predict function
+Taking a closer look at the priors:
+
+``` r
+prior_summary(stan.fit.5)
+```
+
+    ## Priors for model 'stan.fit.5' 
+    ## ------
+    ## Intercept (after predictors centered)
+    ##  ~ normal(location = 0, scale = 10)
+    ## 
+    ## Coefficients
+    ##  ~ normal(location = [0,0,0,...], scale = [2.5,2.5,2.5,...])
+    ##      **adjusted scale = [1.84,2.50,0.30,...]
+    ## 
+    ## Covariance
+    ##  ~ decov(reg. = 1, conc. = 1, shape = 1, scale = 1)
+    ## ------
+    ## See help('prior_summary.stanreg') for more details
+
+``` r
+posterior_vs_prior(stan.fit.5, pars = "beta", facet_args = list(scales = "free"))
+```
+
+    ## 
+    ## Drawing from prior...
+
+![](ip_5_Report_files/figure-markdown_github/unnamed-chunk-27-1.png)
+
+The intercept is centered around zero and scaled by 10 (I think the scaling uses the sd of the actual data somehow).
+
+Coefficients are all centered around zero and scaled by 2.5. The smaller scaling on the coefficients relative to the intercept represents a more conservative approach; constraining closer to zero than the intercept. These priors make sense because we want to assume as a "null" that the predictors have no effect (mean = 0). I think the scaling is useful because each predictor is on a much different scale (e.g. a binary predictor vs. something like SVL which roughly ranges from -5 to 5.). I would guess that this just standardizes how "conservative" the prior is for each predictor. Otherwise, a predictor with a really large scale would have a pretty conservative prior, whereas one with a really small scale would have a pretty uninformative prior. Therefore, I don't want to change these priors.
+
+We can see from the above plot how much the posterior has moved off of the prior.
+
+In the future, I might want to play with the prior for latitude -- I think it covaries with the random effect for site, and I do think latitude is important, but it's not coming out as important from the model. Maybe constraining a prior for that predictor would help? Though by default, the prior should prevent this estimate from getting too crazy (as seen with some colinear predictors) -- thinking back to the McElreath example on colinear predictors.
+
+Visualizing the data
+====================
 
 Plot the relationship between visit (time) and number of parasites, for each species. Hold body size at the average.
 
@@ -1137,7 +1175,7 @@ ggplot(data = subset(fake.data, visitScaledSVL == 0))+
   ylab("Within-host parasite richness")
 ```
 
-![](ip_5_Report_files/figure-markdown_github/unnamed-chunk-27-1.png)
+![](ip_5_Report_files/figure-markdown_github/unnamed-chunk-28-1.png)
 
 Plot the relationship between relative body size (visitScaledSVL) and number of parasites, at each visit.
 
@@ -1198,7 +1236,7 @@ ggplot(data = subset(fake.data2))+
   ylab("Within-host parasite richness")
 ```
 
-![](ip_5_Report_files/figure-markdown_github/unnamed-chunk-28-1.png)
+![](ip_5_Report_files/figure-markdown_github/unnamed-chunk-29-1.png)
 
 How important are site-level differences?
 
@@ -1216,7 +1254,7 @@ samplesdf.r %>%
     guides(fill= FALSE)
 ```
 
-![](ip_5_Report_files/figure-markdown_github/unnamed-chunk-29-1.png)
+![](ip_5_Report_files/figure-markdown_github/unnamed-chunk-30-1.png)
 
 Conclusions
 -----------

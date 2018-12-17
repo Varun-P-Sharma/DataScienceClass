@@ -217,7 +217,7 @@ Note: this is rendering weirdly in the knitted github document, and trying to fi
 
 Overall model:
 
-$Parasite Richness$ ~ $Species$ + $Date$ + $Date^2$ + $Species$ x $Date$ + $Species$ x $Date^2$ + $Latitude$ + $SVL$ + $Species$ x $SVL$ + (1|$Site$) + (1|$Sample$)
+Parasite Richness ~ Species + Date + Date^2 + Species x Date + Species x Date^2 + Latitude + scaledSVL + Species x scaledSVL + (1|Site) + (1|Sample)
 
 **Response Variable:** The response variable I want to model is within-host parasite richness (`tot.para`), which is Poisson-distributed count data. 
 
@@ -239,7 +239,7 @@ At the individual level, parasite richness ($y_i$) is Poisson distributed with a
 
 The log(parasite richness) is predicted by individual-level covariates: species, scaled snout vent length, and interaction. Since the effect of visit is at the site-level, but it interacts with species, I believe that the interaction must go at this level too:
 
-*Equation 2*:  $log(\mu_i)$ = $\mu_{j[i]}$ + $\beta_1$$\times$species + $\beta_2$$\times$scaledSVL + $\beta_3$$\times$species$\times$scaledSVL + $\beta_4$$\times$species$\times$date + $\beta_5$$\times$species$\times$date$^2$
+*Equation 2*:  log($\mu_i$) = $\mu_{j[i]}$ + $\beta_1$$\times$species + $\beta_2$$\times$scaledSVL + $\beta_3$$\times$species$\times$scaledSVL + $\beta_4$$\times$species$\times$date + $\beta_5$$\times$species$\times$date^2
 
 Individual i's parasite load is predicted by the mean of the sample it came from [j] plus the fixed effects. 
 
@@ -248,7 +248,7 @@ Each sampling event mean ($\mu_{j}$) can be predicted from a polynomial relation
 
 The intercept represents the random parasite richness at sampling event j from site k.
 
-*Equation 3*: $\mu_j$ = $\alpha_{j[k]}$ + $\beta_6$$\times$date + $\beta_7$$\times$date$^2$
+*Equation 3*: $\mu_j$ = $\alpha_{j[k]}$ + $\beta_6$$\times$date + $\beta_7$$\times$date^2
 
 The sample-level mean ($\alpha_j$) from site k is drawn randomly from the mean for that site ($\gamma_k$)
 
@@ -432,9 +432,22 @@ The coefficient estimates I would report:
 posterior_interval(stan.fit.5,prob=0.95)[1:6,]
 ```
 
-Visualize using the predict function
 
+Taking a closer look at the priors:
+```{r}
+prior_summary(stan.fit.5)
+posterior_vs_prior(stan.fit.5, pars = "beta", facet_args = list(scales = "free"))
+```
 
+The intercept is centered around zero and scaled by 10 (I think the scaling uses the sd of the actual data somehow).
+
+Coefficients are all centered around zero and scaled by 2.5. The smaller scaling on the coefficients relative to the intercept represents a more conservative approach; constraining closer to zero than the intercept. These priors make sense because we want to assume as a "null" that the predictors have no effect (mean = 0). I think the scaling is useful because each predictor is on a much different scale (e.g. a binary predictor vs. something like SVL which roughly ranges from -5 to 5.). I would guess that this just standardizes how "conservative" the prior is for each predictor. Otherwise, a predictor with a really large scale would have a pretty conservative prior, whereas one with a really small scale would have a pretty uninformative prior. Therefore, I don't want to change these priors. 
+
+We can see from the above plot how much the posterior has moved off of the prior. 
+
+In the future, I might want to play with the prior for latitude -- I think it covaries with the random effect for site, and I do think latitude is important, but it's not coming out as important from the model. Maybe constraining a prior for that predictor would help? Though by default, the prior should prevent this estimate from getting too crazy (as seen with some colinear predictors) -- thinking back to the McElreath example on colinear predictors.
+
+# Visualizing the data
 Plot the relationship between visit (time) and number of parasites, for each species. Hold body size at the average.
 ```{r}
 fake.data <- data.frame(expand.grid(SpeciesCode = c("PSRE", "TATO"), visit = 1:5, 
