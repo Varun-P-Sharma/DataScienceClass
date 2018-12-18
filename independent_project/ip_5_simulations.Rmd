@@ -36,7 +36,7 @@ site.means.df <- data.frame(SiteCode = levels(ponddata$SiteCode), ExpMean = site
 ponddata2 <- merge(ponddata, site.means.df, by = "SiteCode")
 ```
 
-Generate an observed parasite count from the expected site level mean. This is done using a negative binomial distribution.
+Generate an observed parasite count from the expected site level mean. This is done using a poisson distribution.
 ```{r}
 # for each row of the dataset, draw a random parasite richness count
 # from the expected site level means

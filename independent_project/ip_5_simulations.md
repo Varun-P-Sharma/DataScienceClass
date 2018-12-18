@@ -30,7 +30,7 @@ site.means.df <- data.frame(SiteCode = levels(ponddata$SiteCode), ExpMean = site
 ponddata2 <- merge(ponddata, site.means.df, by = "SiteCode")
 ```
 
-Generate an observed parasite count from the expected site level mean. This is done using a negative binomial distribution.
+Generate an observed parasite count from the expected site level mean. This is done using a poisson distribution.
 
 ``` r
 # for each row of the dataset, draw a random parasite richness count
@@ -326,352 +326,352 @@ summary(stan.fit.sim3, digits = 4)
     ## 
     ## Estimates:
     ##                                                mean       sd      
-    ## (Intercept)                                      0.2161     0.2301
-    ## visit                                            0.6894     0.0952
-    ## SpeciesCode                                     -0.4452     0.2064
-    ## I(visit^2)                                      -0.0753     0.0153
-    ## visitScaledSVL                                   0.2974     0.0082
-    ## visit:SpeciesCode                               -1.0075     0.0915
-    ## b[(Intercept) SiteCodevisit:PRNTH1_1]            0.0107     0.0928
-    ## b[(Intercept) SiteCodevisit:PRNTH1_2]            0.0462     0.0804
-    ## b[(Intercept) SiteCodevisit:PRNTH1_3]            0.1410     0.0805
-    ## b[(Intercept) SiteCodevisit:PRNTH1_4]           -0.0922     0.0752
-    ## b[(Intercept) SiteCodevisit:PRNTH1_5]           -0.0872     0.0845
-    ## b[(Intercept) SiteCodevisit:PRNTH4_1]            0.0284     0.0957
-    ## b[(Intercept) SiteCodevisit:PRNTH4_2]            0.0536     0.0920
-    ## b[(Intercept) SiteCodevisit:PRNTH4_3]            0.0086     0.0885
-    ## b[(Intercept) SiteCodevisit:PRNTH4_4]           -0.0339     0.0817
-    ## b[(Intercept) SiteCodevisit:PRNTH4_5]           -0.0752     0.0929
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_1]         -0.0530     0.0973
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_2]         -0.0357     0.0895
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_3]          0.0429     0.0899
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_4]          0.0211     0.0864
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_5]          0.0309     0.1075
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_1]         -0.0433     0.0952
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_2]         -0.0573     0.0910
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_3]          0.0034     0.0893
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_4]          0.0390     0.0774
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_5]          0.0630     0.0874
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_1]          0.0351     0.1017
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_2]         -0.0069     0.1008
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_3]         -0.0980     0.1099
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_4]          0.0234     0.1065
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_5]         -0.0011     0.1096
-    ## b[(Intercept) SiteCodevisit:PRPND009_1]          0.0619     0.0888
-    ## b[(Intercept) SiteCodevisit:PRPND009_2]          0.0193     0.0794
-    ## b[(Intercept) SiteCodevisit:PRPND009_3]          0.0572     0.0741
-    ## b[(Intercept) SiteCodevisit:PRPND009_4]         -0.0260     0.0734
-    ## b[(Intercept) SiteCodevisit:PRPND009_5]         -0.0774     0.0841
-    ## b[(Intercept) SiteCodevisit:PRPND010_1]         -0.0360     0.0956
-    ## b[(Intercept) SiteCodevisit:PRPND010_2]         -0.0170     0.0886
-    ## b[(Intercept) SiteCodevisit:PRPND010_3]          0.0079     0.0892
-    ## b[(Intercept) SiteCodevisit:PRPND010_4]         -0.0231     0.0853
-    ## b[(Intercept) SiteCodevisit:PRPND010_5]          0.0735     0.0885
-    ## b[(Intercept) SiteCodevisit:PRPND014_1]          0.0163     0.0912
-    ## b[(Intercept) SiteCodevisit:PRPND014_2]          0.0047     0.0916
-    ## b[(Intercept) SiteCodevisit:PRPND014_3]         -0.0806     0.0950
-    ## b[(Intercept) SiteCodevisit:PRPND014_4]         -0.0744     0.0870
-    ## b[(Intercept) SiteCodevisit:PRPND014_5]          0.1484     0.0966
-    ## b[(Intercept) SiteCodevisit:PRPND015_1]          0.0037     0.0987
-    ## b[(Intercept) SiteCodevisit:PRPND015_2]         -0.0670     0.1016
-    ## b[(Intercept) SiteCodevisit:PRPND015_3]          0.0382     0.0968
-    ## b[(Intercept) SiteCodevisit:TGIF_1]             -0.0393     0.0980
-    ## b[(Intercept) SiteCodevisit:TGIF_2]              0.0426     0.0953
-    ## b[(Intercept) SiteCodevisit:TGIF_3]              0.0063     0.0846
-    ## b[(Intercept) SiteCodevisit:TGIF_4]              0.0053     0.0852
-    ## b[(Intercept) SiteCodevisit:TGIF_5]             -0.0180     0.0910
-    ## b[(Intercept) SiteCode:PRNTH1]                   0.5272     0.1996
-    ## b[(Intercept) SiteCode:PRNTH4]                  -0.3063     0.2022
-    ## b[(Intercept) SiteCode:PRNTHIDK]                 0.1100     0.2049
-    ## b[(Intercept) SiteCode:PRNTHMIT]                 0.2551     0.1998
-    ## b[(Intercept) SiteCode:PRNTHOWL]                -0.9943     0.2207
-    ## b[(Intercept) SiteCode:PRPND009]                 0.7439     0.1979
-    ## b[(Intercept) SiteCode:PRPND010]                 0.0987     0.2041
-    ## b[(Intercept) SiteCode:PRPND014]                 0.1903     0.2048
-    ## b[(Intercept) SiteCode:PRPND015]                -0.5813     0.2214
-    ## b[(Intercept) SiteCode:TGIF]                    -0.0417     0.2028
-    ## Sigma[SiteCodevisit:(Intercept),(Intercept)]     0.0120     0.0068
-    ## Sigma[SiteCode:(Intercept),(Intercept)]          0.3544     0.2271
-    ## mean_PPD                                         3.7547     0.0883
-    ## log-posterior                                -1437.9403     7.3901
+    ## (Intercept)                                      0.0989     0.2350
+    ## visit                                            0.7387     0.0977
+    ## SpeciesCode                                     -0.5881     0.2135
+    ## I(visit^2)                                      -0.0793     0.0157
+    ## visitScaledSVL                                   0.2973     0.0085
+    ## visit:SpeciesCode                               -0.9489     0.0893
+    ## b[(Intercept) SiteCodevisit:PRNTH1_1]            0.0226     0.0895
+    ## b[(Intercept) SiteCodevisit:PRNTH1_2]            0.0205     0.0827
+    ## b[(Intercept) SiteCodevisit:PRNTH1_3]            0.1317     0.0809
+    ## b[(Intercept) SiteCodevisit:PRNTH1_4]           -0.0483     0.0746
+    ## b[(Intercept) SiteCodevisit:PRNTH1_5]           -0.1053     0.0867
+    ## b[(Intercept) SiteCodevisit:PRNTH4_1]            0.0416     0.0947
+    ## b[(Intercept) SiteCodevisit:PRNTH4_2]           -0.0104     0.0930
+    ## b[(Intercept) SiteCodevisit:PRNTH4_3]           -0.0193     0.0877
+    ## b[(Intercept) SiteCodevisit:PRNTH4_4]           -0.0187     0.0805
+    ## b[(Intercept) SiteCodevisit:PRNTH4_5]           -0.0072     0.0894
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_1]         -0.0518     0.0931
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_2]         -0.0055     0.0866
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_3]         -0.0011     0.0863
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_4]          0.0226     0.0817
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_5]          0.0351     0.0984
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_1]         -0.0150     0.0878
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_2]         -0.0575     0.0872
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_3]         -0.0235     0.0832
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_4]          0.0697     0.0754
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_5]          0.0288     0.0855
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_1]          0.0194     0.1001
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_2]         -0.0115     0.0980
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_3]         -0.0429     0.1009
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_4]          0.0027     0.1005
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_5]         -0.0052     0.1045
+    ## b[(Intercept) SiteCodevisit:PRPND009_1]          0.0322     0.0881
+    ## b[(Intercept) SiteCodevisit:PRPND009_2]          0.0695     0.0880
+    ## b[(Intercept) SiteCodevisit:PRPND009_3]          0.0576     0.0776
+    ## b[(Intercept) SiteCodevisit:PRPND009_4]         -0.0212     0.0744
+    ## b[(Intercept) SiteCodevisit:PRPND009_5]         -0.1107     0.0883
+    ## b[(Intercept) SiteCodevisit:PRPND010_1]         -0.0579     0.0932
+    ## b[(Intercept) SiteCodevisit:PRPND010_2]         -0.0229     0.0858
+    ## b[(Intercept) SiteCodevisit:PRPND010_3]          0.0214     0.0842
+    ## b[(Intercept) SiteCodevisit:PRPND010_4]         -0.0127     0.0795
+    ## b[(Intercept) SiteCodevisit:PRPND010_5]          0.0745     0.0848
+    ## b[(Intercept) SiteCodevisit:PRPND014_1]          0.0392     0.0910
+    ## b[(Intercept) SiteCodevisit:PRPND014_2]         -0.0294     0.0818
+    ## b[(Intercept) SiteCodevisit:PRPND014_3]         -0.0574     0.0893
+    ## b[(Intercept) SiteCodevisit:PRPND014_4]         -0.0455     0.0806
+    ## b[(Intercept) SiteCodevisit:PRPND014_5]          0.0955     0.0946
+    ## b[(Intercept) SiteCodevisit:PRPND015_1]          0.0156     0.0970
+    ## b[(Intercept) SiteCodevisit:PRPND015_2]         -0.0739     0.0989
+    ## b[(Intercept) SiteCodevisit:PRPND015_3]          0.0388     0.0926
+    ## b[(Intercept) SiteCodevisit:TGIF_1]             -0.0422     0.0944
+    ## b[(Intercept) SiteCodevisit:TGIF_2]              0.0672     0.0878
+    ## b[(Intercept) SiteCodevisit:TGIF_3]              0.0000     0.0787
+    ## b[(Intercept) SiteCodevisit:TGIF_4]             -0.0513     0.0817
+    ## b[(Intercept) SiteCodevisit:TGIF_5]              0.0244     0.0834
+    ## b[(Intercept) SiteCode:PRNTH1]                   0.6133     0.2031
+    ## b[(Intercept) SiteCode:PRNTH4]                  -0.3709     0.2075
+    ## b[(Intercept) SiteCode:PRNTHIDK]                 0.0794     0.2110
+    ## b[(Intercept) SiteCode:PRNTHMIT]                 0.2737     0.2052
+    ## b[(Intercept) SiteCode:PRNTHOWL]                -1.0590     0.2367
+    ## b[(Intercept) SiteCode:PRPND009]                 0.6740     0.2040
+    ## b[(Intercept) SiteCode:PRPND010]                 0.1110     0.2064
+    ## b[(Intercept) SiteCode:PRPND014]                 0.1617     0.2059
+    ## b[(Intercept) SiteCode:PRPND015]                -0.5141     0.2205
+    ## b[(Intercept) SiteCode:TGIF]                     0.0419     0.2060
+    ## Sigma[SiteCodevisit:(Intercept),(Intercept)]     0.0107     0.0065
+    ## Sigma[SiteCode:(Intercept),(Intercept)]          0.3834     0.2556
+    ## mean_PPD                                         3.5777     0.0850
+    ## log-posterior                                -1427.6238     7.3580
     ##                                                2.5%       25%     
-    ## (Intercept)                                     -0.2243     0.0643
-    ## visit                                            0.4952     0.6286
-    ## SpeciesCode                                     -0.8577    -0.5819
-    ## I(visit^2)                                      -0.1047    -0.0853
-    ## visitScaledSVL                                   0.2812     0.2919
-    ## visit:SpeciesCode                               -1.1923    -1.0682
-    ## b[(Intercept) SiteCodevisit:PRNTH1_1]           -0.1730    -0.0494
-    ## b[(Intercept) SiteCodevisit:PRNTH1_2]           -0.1002    -0.0064
-    ## b[(Intercept) SiteCodevisit:PRNTH1_3]           -0.0033     0.0848
-    ## b[(Intercept) SiteCodevisit:PRNTH1_4]           -0.2529    -0.1409
-    ## b[(Intercept) SiteCodevisit:PRNTH1_5]           -0.2652    -0.1415
-    ## b[(Intercept) SiteCodevisit:PRNTH4_1]           -0.1643    -0.0322
-    ## b[(Intercept) SiteCodevisit:PRNTH4_2]           -0.1184    -0.0080
-    ## b[(Intercept) SiteCodevisit:PRNTH4_3]           -0.1742    -0.0466
-    ## b[(Intercept) SiteCodevisit:PRNTH4_4]           -0.2030    -0.0850
-    ## b[(Intercept) SiteCodevisit:PRNTH4_5]           -0.2728    -0.1327
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_1]         -0.2664    -0.1116
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_2]         -0.2206    -0.0904
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_3]         -0.1319    -0.0144
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_4]         -0.1502    -0.0343
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_5]         -0.1828    -0.0383
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_1]         -0.2357    -0.1043
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_2]         -0.2494    -0.1169
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_3]         -0.1740    -0.0527
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_4]         -0.1103    -0.0114
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_5]         -0.1013     0.0047
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_1]         -0.1583    -0.0296
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_2]         -0.2067    -0.0706
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_3]         -0.3359    -0.1650
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_4]         -0.1876    -0.0425
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_5]         -0.2216    -0.0687
-    ## b[(Intercept) SiteCodevisit:PRPND009_1]         -0.1023     0.0010
-    ## b[(Intercept) SiteCodevisit:PRPND009_2]         -0.1343    -0.0327
-    ## b[(Intercept) SiteCodevisit:PRPND009_3]         -0.0802     0.0065
-    ## b[(Intercept) SiteCodevisit:PRPND009_4]         -0.1716    -0.0723
-    ## b[(Intercept) SiteCodevisit:PRPND009_5]         -0.2563    -0.1303
-    ## b[(Intercept) SiteCodevisit:PRPND010_1]         -0.2388    -0.0952
-    ## b[(Intercept) SiteCodevisit:PRPND010_2]         -0.1981    -0.0695
-    ## b[(Intercept) SiteCodevisit:PRPND010_3]         -0.1646    -0.0486
-    ## b[(Intercept) SiteCodevisit:PRPND010_4]         -0.1933    -0.0791
-    ## b[(Intercept) SiteCodevisit:PRPND010_5]         -0.0884     0.0133
-    ## b[(Intercept) SiteCodevisit:PRPND014_1]         -0.1642    -0.0444
-    ## b[(Intercept) SiteCodevisit:PRPND014_2]         -0.1837    -0.0524
-    ## b[(Intercept) SiteCodevisit:PRPND014_3]         -0.2863    -0.1407
-    ## b[(Intercept) SiteCodevisit:PRPND014_4]         -0.2582    -0.1301
-    ## b[(Intercept) SiteCodevisit:PRPND014_5]         -0.0256     0.0832
-    ## b[(Intercept) SiteCodevisit:PRPND015_1]         -0.2000    -0.0584
-    ## b[(Intercept) SiteCodevisit:PRPND015_2]         -0.2828    -0.1290
-    ## b[(Intercept) SiteCodevisit:PRPND015_3]         -0.1478    -0.0244
-    ## b[(Intercept) SiteCodevisit:TGIF_1]             -0.2449    -0.0982
-    ## b[(Intercept) SiteCodevisit:TGIF_2]             -0.1396    -0.0171
-    ## b[(Intercept) SiteCodevisit:TGIF_3]             -0.1653    -0.0492
-    ## b[(Intercept) SiteCodevisit:TGIF_4]             -0.1628    -0.0495
-    ## b[(Intercept) SiteCodevisit:TGIF_5]             -0.2014    -0.0733
-    ## b[(Intercept) SiteCode:PRNTH1]                   0.1327     0.3987
-    ## b[(Intercept) SiteCode:PRNTH4]                  -0.7171    -0.4358
-    ## b[(Intercept) SiteCode:PRNTHIDK]                -0.3006    -0.0185
-    ## b[(Intercept) SiteCode:PRNTHMIT]                -0.1464     0.1281
-    ## b[(Intercept) SiteCode:PRNTHOWL]                -1.4445    -1.1342
-    ## b[(Intercept) SiteCode:PRPND009]                 0.3536     0.6186
-    ## b[(Intercept) SiteCode:PRPND010]                -0.3004    -0.0302
-    ## b[(Intercept) SiteCode:PRPND014]                -0.2210     0.0591
-    ## b[(Intercept) SiteCode:PRPND015]                -1.0327    -0.7256
-    ## b[(Intercept) SiteCode:TGIF]                    -0.4565    -0.1741
-    ## Sigma[SiteCodevisit:(Intercept),(Intercept)]     0.0023     0.0073
-    ## Sigma[SiteCode:(Intercept),(Intercept)]          0.1249     0.2135
-    ## mean_PPD                                         3.5829     3.6945
-    ## log-posterior                                -1453.6469 -1442.5849
+    ## (Intercept)                                     -0.3626    -0.0477
+    ## visit                                            0.5455     0.6732
+    ## SpeciesCode                                     -1.0047    -0.7345
+    ## I(visit^2)                                      -0.1094    -0.0898
+    ## visitScaledSVL                                   0.2804     0.2915
+    ## visit:SpeciesCode                               -1.1258    -1.0089
+    ## b[(Intercept) SiteCodevisit:PRNTH1_1]           -0.1531    -0.0334
+    ## b[(Intercept) SiteCodevisit:PRNTH1_2]           -0.1369    -0.0320
+    ## b[(Intercept) SiteCodevisit:PRNTH1_3]           -0.0092     0.0749
+    ## b[(Intercept) SiteCodevisit:PRNTH1_4]           -0.2008    -0.0954
+    ## b[(Intercept) SiteCodevisit:PRNTH1_5]           -0.2929    -0.1587
+    ## b[(Intercept) SiteCodevisit:PRNTH4_1]           -0.1333    -0.0185
+    ## b[(Intercept) SiteCodevisit:PRNTH4_2]           -0.2047    -0.0696
+    ## b[(Intercept) SiteCodevisit:PRNTH4_3]           -0.2034    -0.0728
+    ## b[(Intercept) SiteCodevisit:PRNTH4_4]           -0.1811    -0.0668
+    ## b[(Intercept) SiteCodevisit:PRNTH4_5]           -0.1908    -0.0627
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_1]         -0.2520    -0.1071
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_2]         -0.1842    -0.0585
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_3]         -0.1747    -0.0517
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_4]         -0.1404    -0.0283
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_5]         -0.1546    -0.0252
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_1]         -0.1891    -0.0683
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_2]         -0.2399    -0.1124
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_3]         -0.1960    -0.0750
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_4]         -0.0722     0.0167
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_5]         -0.1334    -0.0253
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_1]         -0.1742    -0.0427
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_2]         -0.2139    -0.0712
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_3]         -0.2592    -0.1031
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_4]         -0.2057    -0.0567
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_5]         -0.2250    -0.0665
+    ## b[(Intercept) SiteCodevisit:PRPND009_1]         -0.1384    -0.0245
+    ## b[(Intercept) SiteCodevisit:PRPND009_2]         -0.0971     0.0108
+    ## b[(Intercept) SiteCodevisit:PRPND009_3]         -0.0870     0.0060
+    ## b[(Intercept) SiteCodevisit:PRPND009_4]         -0.1696    -0.0676
+    ## b[(Intercept) SiteCodevisit:PRPND009_5]         -0.3033    -0.1653
+    ## b[(Intercept) SiteCodevisit:PRPND010_1]         -0.2533    -0.1136
+    ## b[(Intercept) SiteCodevisit:PRPND010_2]         -0.2025    -0.0769
+    ## b[(Intercept) SiteCodevisit:PRPND010_3]         -0.1481    -0.0311
+    ## b[(Intercept) SiteCodevisit:PRPND010_4]         -0.1747    -0.0624
+    ## b[(Intercept) SiteCodevisit:PRPND010_5]         -0.0849     0.0155
+    ## b[(Intercept) SiteCodevisit:PRPND014_1]         -0.1356    -0.0182
+    ## b[(Intercept) SiteCodevisit:PRPND014_2]         -0.2014    -0.0799
+    ## b[(Intercept) SiteCodevisit:PRPND014_3]         -0.2462    -0.1117
+    ## b[(Intercept) SiteCodevisit:PRPND014_4]         -0.2105    -0.0989
+    ## b[(Intercept) SiteCodevisit:PRPND014_5]         -0.0695     0.0298
+    ## b[(Intercept) SiteCodevisit:PRPND015_1]         -0.1753    -0.0432
+    ## b[(Intercept) SiteCodevisit:PRPND015_2]         -0.2946    -0.1319
+    ## b[(Intercept) SiteCodevisit:PRPND015_3]         -0.1385    -0.0210
+    ## b[(Intercept) SiteCodevisit:TGIF_1]             -0.2408    -0.1000
+    ## b[(Intercept) SiteCodevisit:TGIF_2]             -0.0926     0.0089
+    ## b[(Intercept) SiteCodevisit:TGIF_3]             -0.1568    -0.0499
+    ## b[(Intercept) SiteCodevisit:TGIF_4]             -0.2236    -0.1015
+    ## b[(Intercept) SiteCodevisit:TGIF_5]             -0.1436    -0.0289
+    ## b[(Intercept) SiteCode:PRNTH1]                   0.2187     0.4885
+    ## b[(Intercept) SiteCode:PRNTH4]                  -0.7881    -0.4995
+    ## b[(Intercept) SiteCode:PRNTHIDK]                -0.3456    -0.0495
+    ## b[(Intercept) SiteCode:PRNTHMIT]                -0.1364     0.1439
+    ## b[(Intercept) SiteCode:PRNTHOWL]                -1.5412    -1.2074
+    ## b[(Intercept) SiteCode:PRPND009]                 0.2769     0.5456
+    ## b[(Intercept) SiteCode:PRPND010]                -0.2960    -0.0166
+    ## b[(Intercept) SiteCode:PRPND014]                -0.2404     0.0340
+    ## b[(Intercept) SiteCode:PRPND015]                -0.9510    -0.6517
+    ## b[(Intercept) SiteCode:TGIF]                    -0.3693    -0.0804
+    ## Sigma[SiteCodevisit:(Intercept),(Intercept)]     0.0013     0.0062
+    ## Sigma[SiteCode:(Intercept),(Intercept)]          0.1242     0.2264
+    ## mean_PPD                                         3.4160     3.5203
+    ## log-posterior                                -1443.1115 -1432.3244
     ##                                                50%        75%     
-    ## (Intercept)                                      0.2159     0.3624
-    ## visit                                            0.6912     0.7517
-    ## SpeciesCode                                     -0.4427    -0.3073
-    ## I(visit^2)                                      -0.0756    -0.0656
-    ## visitScaledSVL                                   0.2975     0.3030
-    ## visit:SpeciesCode                               -1.0063    -0.9445
-    ## b[(Intercept) SiteCodevisit:PRNTH1_1]            0.0092     0.0688
-    ## b[(Intercept) SiteCodevisit:PRNTH1_2]            0.0426     0.0987
-    ## b[(Intercept) SiteCodevisit:PRNTH1_3]            0.1372     0.1916
-    ## b[(Intercept) SiteCodevisit:PRNTH1_4]           -0.0901    -0.0417
-    ## b[(Intercept) SiteCodevisit:PRNTH1_5]           -0.0827    -0.0288
-    ## b[(Intercept) SiteCodevisit:PRNTH4_1]            0.0262     0.0868
-    ## b[(Intercept) SiteCodevisit:PRNTH4_2]            0.0499     0.1110
-    ## b[(Intercept) SiteCodevisit:PRNTH4_3]            0.0084     0.0653
-    ## b[(Intercept) SiteCodevisit:PRNTH4_4]           -0.0298     0.0186
-    ## b[(Intercept) SiteCodevisit:PRNTH4_5]           -0.0686    -0.0112
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_1]         -0.0481     0.0109
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_2]         -0.0316     0.0228
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_3]          0.0405     0.0994
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_4]          0.0200     0.0743
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_5]          0.0283     0.0976
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_1]         -0.0385     0.0195
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_2]         -0.0513     0.0027
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_3]          0.0029     0.0600
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_4]          0.0349     0.0888
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_5]          0.0598     0.1188
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_1]          0.0307     0.0989
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_2]         -0.0038     0.0560
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_3]         -0.0873    -0.0202
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_4]          0.0209     0.0871
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_5]         -0.0007     0.0670
-    ## b[(Intercept) SiteCodevisit:PRPND009_1]          0.0560     0.1163
-    ## b[(Intercept) SiteCodevisit:PRPND009_2]          0.0189     0.0703
-    ## b[(Intercept) SiteCodevisit:PRPND009_3]          0.0546     0.1051
-    ## b[(Intercept) SiteCodevisit:PRPND009_4]         -0.0249     0.0205
-    ## b[(Intercept) SiteCodevisit:PRPND009_5]         -0.0715    -0.0209
-    ## b[(Intercept) SiteCodevisit:PRPND010_1]         -0.0327     0.0259
-    ## b[(Intercept) SiteCodevisit:PRPND010_2]         -0.0150     0.0374
-    ## b[(Intercept) SiteCodevisit:PRPND010_3]          0.0061     0.0637
-    ## b[(Intercept) SiteCodevisit:PRPND010_4]         -0.0207     0.0309
-    ## b[(Intercept) SiteCodevisit:PRPND010_5]          0.0708     0.1274
-    ## b[(Intercept) SiteCodevisit:PRPND014_1]          0.0162     0.0751
-    ## b[(Intercept) SiteCodevisit:PRPND014_2]          0.0030     0.0649
-    ## b[(Intercept) SiteCodevisit:PRPND014_3]         -0.0727    -0.0185
-    ## b[(Intercept) SiteCodevisit:PRPND014_4]         -0.0698    -0.0157
-    ## b[(Intercept) SiteCodevisit:PRPND014_5]          0.1410     0.2080
-    ## b[(Intercept) SiteCodevisit:PRPND015_1]          0.0051     0.0639
-    ## b[(Intercept) SiteCodevisit:PRPND015_2]         -0.0629     0.0017
-    ## b[(Intercept) SiteCodevisit:PRPND015_3]          0.0346     0.0997
-    ## b[(Intercept) SiteCodevisit:TGIF_1]             -0.0345     0.0253
-    ## b[(Intercept) SiteCodevisit:TGIF_2]              0.0398     0.1005
-    ## b[(Intercept) SiteCodevisit:TGIF_3]              0.0072     0.0615
-    ## b[(Intercept) SiteCodevisit:TGIF_4]              0.0037     0.0604
-    ## b[(Intercept) SiteCodevisit:TGIF_5]             -0.0161     0.0397
-    ## b[(Intercept) SiteCode:PRNTH1]                   0.5286     0.6625
-    ## b[(Intercept) SiteCode:PRNTH4]                  -0.3019    -0.1719
-    ## b[(Intercept) SiteCode:PRNTHIDK]                 0.1138     0.2420
-    ## b[(Intercept) SiteCode:PRNTHMIT]                 0.2564     0.3845
-    ## b[(Intercept) SiteCode:PRNTHOWL]                -0.9869    -0.8516
-    ## b[(Intercept) SiteCode:PRPND009]                 0.7465     0.8720
-    ## b[(Intercept) SiteCode:PRPND010]                 0.1009     0.2295
-    ## b[(Intercept) SiteCode:PRPND014]                 0.1934     0.3242
-    ## b[(Intercept) SiteCode:PRPND015]                -0.5766    -0.4375
-    ## b[(Intercept) SiteCode:TGIF]                    -0.0361     0.0881
-    ## Sigma[SiteCodevisit:(Intercept),(Intercept)]     0.0109     0.0154
-    ## Sigma[SiteCode:(Intercept),(Intercept)]          0.3005     0.4222
-    ## mean_PPD                                         3.7560     3.8154
-    ## log-posterior                                -1437.7894 -1432.8075
+    ## (Intercept)                                      0.0991     0.2457
+    ## visit                                            0.7393     0.8059
+    ## SpeciesCode                                     -0.5875    -0.4396
+    ## I(visit^2)                                      -0.0794    -0.0688
+    ## visitScaledSVL                                   0.2972     0.3029
+    ## visit:SpeciesCode                               -0.9484    -0.8864
+    ## b[(Intercept) SiteCodevisit:PRNTH1_1]            0.0190     0.0781
+    ## b[(Intercept) SiteCodevisit:PRNTH1_2]            0.0195     0.0713
+    ## b[(Intercept) SiteCodevisit:PRNTH1_3]            0.1297     0.1816
+    ## b[(Intercept) SiteCodevisit:PRNTH1_4]           -0.0443     0.0020
+    ## b[(Intercept) SiteCodevisit:PRNTH1_5]           -0.0987    -0.0451
+    ## b[(Intercept) SiteCodevisit:PRNTH4_1]            0.0348     0.0986
+    ## b[(Intercept) SiteCodevisit:PRNTH4_2]           -0.0080     0.0491
+    ## b[(Intercept) SiteCodevisit:PRNTH4_3]           -0.0157     0.0352
+    ## b[(Intercept) SiteCodevisit:PRNTH4_4]           -0.0153     0.0331
+    ## b[(Intercept) SiteCodevisit:PRNTH4_5]           -0.0043     0.0490
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_1]         -0.0456     0.0066
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_2]         -0.0055     0.0505
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_3]         -0.0007     0.0510
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_4]          0.0198     0.0714
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_5]          0.0288     0.0937
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_1]         -0.0139     0.0388
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_2]         -0.0534     0.0000
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_3]         -0.0211     0.0306
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_4]          0.0666     0.1177
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_5]          0.0248     0.0825
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_1]          0.0158     0.0822
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_2]         -0.0091     0.0499
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_3]         -0.0360     0.0207
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_4]          0.0023     0.0629
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_5]         -0.0035     0.0579
+    ## b[(Intercept) SiteCodevisit:PRPND009_1]          0.0272     0.0862
+    ## b[(Intercept) SiteCodevisit:PRPND009_2]          0.0647     0.1219
+    ## b[(Intercept) SiteCodevisit:PRPND009_3]          0.0524     0.1053
+    ## b[(Intercept) SiteCodevisit:PRPND009_4]         -0.0189     0.0260
+    ## b[(Intercept) SiteCodevisit:PRPND009_5]         -0.1040    -0.0480
+    ## b[(Intercept) SiteCodevisit:PRPND010_1]         -0.0518     0.0036
+    ## b[(Intercept) SiteCodevisit:PRPND010_2]         -0.0180     0.0331
+    ## b[(Intercept) SiteCodevisit:PRPND010_3]          0.0175     0.0716
+    ## b[(Intercept) SiteCodevisit:PRPND010_4]         -0.0100     0.0367
+    ## b[(Intercept) SiteCodevisit:PRPND010_5]          0.0711     0.1284
+    ## b[(Intercept) SiteCodevisit:PRPND014_1]          0.0343     0.0934
+    ## b[(Intercept) SiteCodevisit:PRPND014_2]         -0.0254     0.0224
+    ## b[(Intercept) SiteCodevisit:PRPND014_3]         -0.0514     0.0021
+    ## b[(Intercept) SiteCodevisit:PRPND014_4]         -0.0414     0.0083
+    ## b[(Intercept) SiteCodevisit:PRPND014_5]          0.0872     0.1538
+    ## b[(Intercept) SiteCodevisit:PRPND015_1]          0.0138     0.0737
+    ## b[(Intercept) SiteCodevisit:PRPND015_2]         -0.0654    -0.0064
+    ## b[(Intercept) SiteCodevisit:PRPND015_3]          0.0323     0.0964
+    ## b[(Intercept) SiteCodevisit:TGIF_1]             -0.0375     0.0172
+    ## b[(Intercept) SiteCodevisit:TGIF_2]              0.0602     0.1204
+    ## b[(Intercept) SiteCodevisit:TGIF_3]             -0.0007     0.0499
+    ## b[(Intercept) SiteCodevisit:TGIF_4]             -0.0485     0.0019
+    ## b[(Intercept) SiteCodevisit:TGIF_5]              0.0234     0.0760
+    ## b[(Intercept) SiteCode:PRNTH1]                   0.6116     0.7368
+    ## b[(Intercept) SiteCode:PRNTH4]                  -0.3674    -0.2430
+    ## b[(Intercept) SiteCode:PRNTHIDK]                 0.0811     0.2070
+    ## b[(Intercept) SiteCode:PRNTHMIT]                 0.2760     0.4010
+    ## b[(Intercept) SiteCode:PRNTHOWL]                -1.0483    -0.9052
+    ## b[(Intercept) SiteCode:PRPND009]                 0.6713     0.7992
+    ## b[(Intercept) SiteCode:PRPND010]                 0.1135     0.2341
+    ## b[(Intercept) SiteCode:PRPND014]                 0.1612     0.2903
+    ## b[(Intercept) SiteCode:PRPND015]                -0.5101    -0.3749
+    ## b[(Intercept) SiteCode:TGIF]                     0.0429     0.1712
+    ## Sigma[SiteCodevisit:(Intercept),(Intercept)]     0.0096     0.0141
+    ## Sigma[SiteCode:(Intercept),(Intercept)]          0.3139     0.4607
+    ## mean_PPD                                         3.5766     3.6340
+    ## log-posterior                                -1427.4965 -1422.3841
     ##                                                97.5%   
-    ## (Intercept)                                      0.6691
-    ## visit                                            0.8711
-    ## SpeciesCode                                     -0.0432
-    ## I(visit^2)                                      -0.0442
-    ## visitScaledSVL                                   0.3134
-    ## visit:SpeciesCode                               -0.8318
-    ## b[(Intercept) SiteCodevisit:PRNTH1_1]            0.1963
-    ## b[(Intercept) SiteCodevisit:PRNTH1_2]            0.2155
-    ## b[(Intercept) SiteCodevisit:PRNTH1_3]            0.3108
-    ## b[(Intercept) SiteCodevisit:PRNTH1_4]            0.0478
-    ## b[(Intercept) SiteCodevisit:PRNTH1_5]            0.0668
-    ## b[(Intercept) SiteCodevisit:PRNTH4_1]            0.2223
-    ## b[(Intercept) SiteCodevisit:PRNTH4_2]            0.2443
-    ## b[(Intercept) SiteCodevisit:PRNTH4_3]            0.1852
-    ## b[(Intercept) SiteCodevisit:PRNTH4_4]            0.1193
-    ## b[(Intercept) SiteCodevisit:PRNTH4_5]            0.0889
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_1]          0.1304
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_2]          0.1383
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_3]          0.2333
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_4]          0.1964
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_5]          0.2483
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_1]          0.1393
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_2]          0.1123
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_3]          0.1847
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_4]          0.1958
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_5]          0.2431
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_1]          0.2441
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_2]          0.1946
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_3]          0.0889
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_4]          0.2413
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_5]          0.2211
-    ## b[(Intercept) SiteCodevisit:PRPND009_1]          0.2517
-    ## b[(Intercept) SiteCodevisit:PRPND009_2]          0.1785
-    ## b[(Intercept) SiteCodevisit:PRPND009_3]          0.2069
-    ## b[(Intercept) SiteCodevisit:PRPND009_4]          0.1178
-    ## b[(Intercept) SiteCodevisit:PRPND009_5]          0.0806
-    ## b[(Intercept) SiteCodevisit:PRPND010_1]          0.1490
-    ## b[(Intercept) SiteCodevisit:PRPND010_2]          0.1618
-    ## b[(Intercept) SiteCodevisit:PRPND010_3]          0.1926
-    ## b[(Intercept) SiteCodevisit:PRPND010_4]          0.1417
-    ## b[(Intercept) SiteCodevisit:PRPND010_5]          0.2572
-    ## b[(Intercept) SiteCodevisit:PRPND014_1]          0.1952
-    ## b[(Intercept) SiteCodevisit:PRPND014_2]          0.1881
-    ## b[(Intercept) SiteCodevisit:PRPND014_3]          0.0970
-    ## b[(Intercept) SiteCodevisit:PRPND014_4]          0.0860
-    ## b[(Intercept) SiteCodevisit:PRPND014_5]          0.3572
-    ## b[(Intercept) SiteCodevisit:PRPND015_1]          0.2027
-    ## b[(Intercept) SiteCodevisit:PRPND015_2]          0.1166
-    ## b[(Intercept) SiteCodevisit:PRPND015_3]          0.2386
-    ## b[(Intercept) SiteCodevisit:TGIF_1]              0.1435
-    ## b[(Intercept) SiteCodevisit:TGIF_2]              0.2438
-    ## b[(Intercept) SiteCodevisit:TGIF_3]              0.1740
-    ## b[(Intercept) SiteCodevisit:TGIF_4]              0.1763
-    ## b[(Intercept) SiteCodevisit:TGIF_5]              0.1586
-    ## b[(Intercept) SiteCode:PRNTH1]                   0.9127
-    ## b[(Intercept) SiteCode:PRNTH4]                   0.0728
-    ## b[(Intercept) SiteCode:PRNTHIDK]                 0.5103
-    ## b[(Intercept) SiteCode:PRNTHMIT]                 0.6435
-    ## b[(Intercept) SiteCode:PRNTHOWL]                -0.5520
-    ## b[(Intercept) SiteCode:PRPND009]                 1.1361
-    ## b[(Intercept) SiteCode:PRPND010]                 0.5043
-    ## b[(Intercept) SiteCode:PRPND014]                 0.5891
-    ## b[(Intercept) SiteCode:PRPND015]                -0.1622
-    ## b[(Intercept) SiteCode:TGIF]                     0.3514
-    ## Sigma[SiteCodevisit:(Intercept),(Intercept)]     0.0284
-    ## Sigma[SiteCode:(Intercept),(Intercept)]          0.9193
-    ## mean_PPD                                         3.9270
-    ## log-posterior                                -1424.5811
+    ## (Intercept)                                      0.5680
+    ## visit                                            0.9210
+    ## SpeciesCode                                     -0.1804
+    ## I(visit^2)                                      -0.0478
+    ## visitScaledSVL                                   0.3140
+    ## visit:SpeciesCode                               -0.7782
+    ## b[(Intercept) SiteCodevisit:PRNTH1_1]            0.2065
+    ## b[(Intercept) SiteCodevisit:PRNTH1_2]            0.1875
+    ## b[(Intercept) SiteCodevisit:PRNTH1_3]            0.3093
+    ## b[(Intercept) SiteCodevisit:PRNTH1_4]            0.0948
+    ## b[(Intercept) SiteCodevisit:PRNTH1_5]            0.0418
+    ## b[(Intercept) SiteCodevisit:PRNTH4_1]            0.2443
+    ## b[(Intercept) SiteCodevisit:PRNTH4_2]            0.1711
+    ## b[(Intercept) SiteCodevisit:PRNTH4_3]            0.1526
+    ## b[(Intercept) SiteCodevisit:PRNTH4_4]            0.1385
+    ## b[(Intercept) SiteCodevisit:PRNTH4_5]            0.1684
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_1]          0.1204
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_2]          0.1645
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_3]          0.1714
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_4]          0.1892
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_5]          0.2403
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_1]          0.1627
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_2]          0.1073
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_3]          0.1375
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_4]          0.2234
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_5]          0.2068
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_1]          0.2185
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_2]          0.1761
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_3]          0.1443
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_4]          0.2042
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_5]          0.2035
+    ## b[(Intercept) SiteCodevisit:PRPND009_1]          0.2163
+    ## b[(Intercept) SiteCodevisit:PRPND009_2]          0.2636
+    ## b[(Intercept) SiteCodevisit:PRPND009_3]          0.2242
+    ## b[(Intercept) SiteCodevisit:PRPND009_4]          0.1218
+    ## b[(Intercept) SiteCodevisit:PRPND009_5]          0.0407
+    ## b[(Intercept) SiteCodevisit:PRPND010_1]          0.1146
+    ## b[(Intercept) SiteCodevisit:PRPND010_2]          0.1429
+    ## b[(Intercept) SiteCodevisit:PRPND010_3]          0.2005
+    ## b[(Intercept) SiteCodevisit:PRPND010_4]          0.1404
+    ## b[(Intercept) SiteCodevisit:PRPND010_5]          0.2566
+    ## b[(Intercept) SiteCodevisit:PRPND014_1]          0.2374
+    ## b[(Intercept) SiteCodevisit:PRPND014_2]          0.1255
+    ## b[(Intercept) SiteCodevisit:PRPND014_3]          0.1132
+    ## b[(Intercept) SiteCodevisit:PRPND014_4]          0.1036
+    ## b[(Intercept) SiteCodevisit:PRPND014_5]          0.2967
+    ## b[(Intercept) SiteCodevisit:PRPND015_1]          0.2088
+    ## b[(Intercept) SiteCodevisit:PRPND015_2]          0.1012
+    ## b[(Intercept) SiteCodevisit:PRPND015_3]          0.2331
+    ## b[(Intercept) SiteCodevisit:TGIF_1]              0.1376
+    ## b[(Intercept) SiteCodevisit:TGIF_2]              0.2635
+    ## b[(Intercept) SiteCodevisit:TGIF_3]              0.1593
+    ## b[(Intercept) SiteCodevisit:TGIF_4]              0.1050
+    ## b[(Intercept) SiteCodevisit:TGIF_5]              0.1928
+    ## b[(Intercept) SiteCode:PRNTH1]                   1.0036
+    ## b[(Intercept) SiteCode:PRNTH4]                   0.0338
+    ## b[(Intercept) SiteCode:PRNTHIDK]                 0.4961
+    ## b[(Intercept) SiteCode:PRNTHMIT]                 0.6723
+    ## b[(Intercept) SiteCode:PRNTHOWL]                -0.6163
+    ## b[(Intercept) SiteCode:PRPND009]                 1.0918
+    ## b[(Intercept) SiteCode:PRPND010]                 0.5212
+    ## b[(Intercept) SiteCode:PRPND014]                 0.5738
+    ## b[(Intercept) SiteCode:PRPND015]                -0.0955
+    ## b[(Intercept) SiteCode:TGIF]                     0.4530
+    ## Sigma[SiteCodevisit:(Intercept),(Intercept)]     0.0268
+    ## Sigma[SiteCode:(Intercept),(Intercept)]          1.0521
+    ## mean_PPD                                         3.7508
+    ## log-posterior                                -1414.5595
     ## 
     ## Diagnostics:
     ##                                              mcse   Rhat   n_eff
-    ## (Intercept)                                  0.0070 1.0036 1068 
-    ## visit                                        0.0021 1.0010 2027 
-    ## SpeciesCode                                  0.0036 0.9996 3290 
-    ## I(visit^2)                                   0.0003 1.0008 2013 
-    ## visitScaledSVL                               0.0001 0.9997 5927 
-    ## visit:SpeciesCode                            0.0016 0.9999 3362 
-    ## b[(Intercept) SiteCodevisit:PRNTH1_1]        0.0013 0.9995 5379 
-    ## b[(Intercept) SiteCodevisit:PRNTH1_2]        0.0011 0.9998 5100 
-    ## b[(Intercept) SiteCodevisit:PRNTH1_3]        0.0015 1.0004 3043 
-    ## b[(Intercept) SiteCodevisit:PRNTH1_4]        0.0012 1.0003 3796 
-    ## b[(Intercept) SiteCodevisit:PRNTH1_5]        0.0014 0.9993 3828 
-    ## b[(Intercept) SiteCodevisit:PRNTH4_1]        0.0012 0.9997 6910 
-    ## b[(Intercept) SiteCodevisit:PRNTH4_2]        0.0012 0.9996 5578 
-    ## b[(Intercept) SiteCodevisit:PRNTH4_3]        0.0012 0.9996 5288 
-    ## b[(Intercept) SiteCodevisit:PRNTH4_4]        0.0011 1.0002 5097 
-    ## b[(Intercept) SiteCodevisit:PRNTH4_5]        0.0014 1.0001 4268 
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_1]      0.0014 0.9993 4555 
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_2]      0.0012 0.9997 5802 
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_3]      0.0013 1.0000 5050 
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_4]      0.0011 1.0003 5940 
-    ## b[(Intercept) SiteCodevisit:PRNTHIDK_5]      0.0013 0.9994 6794 
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_1]      0.0013 1.0005 5005 
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_2]      0.0012 1.0002 5765 
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_3]      0.0013 0.9999 4695 
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_4]      0.0011 1.0004 4587 
-    ## b[(Intercept) SiteCodevisit:PRNTHMIT_5]      0.0012 0.9996 5327 
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_1]      0.0014 0.9993 5580 
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_2]      0.0013 1.0002 5861 
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_3]      0.0018 1.0014 3723 
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_4]      0.0014 0.9992 5421 
-    ## b[(Intercept) SiteCodevisit:PRNTHOWL_5]      0.0014 0.9993 6589 
-    ## b[(Intercept) SiteCodevisit:PRPND009_1]      0.0013 0.9995 5004 
-    ## b[(Intercept) SiteCodevisit:PRPND009_2]      0.0011 0.9993 4805 
-    ## b[(Intercept) SiteCodevisit:PRPND009_3]      0.0012 0.9993 3969 
-    ## b[(Intercept) SiteCodevisit:PRPND009_4]      0.0011 0.9999 4678 
-    ## b[(Intercept) SiteCodevisit:PRPND009_5]      0.0014 0.9999 3872 
-    ## b[(Intercept) SiteCodevisit:PRPND010_1]      0.0012 0.9999 6320 
-    ## b[(Intercept) SiteCodevisit:PRPND010_2]      0.0012 1.0001 5390 
-    ## b[(Intercept) SiteCodevisit:PRPND010_3]      0.0012 1.0001 5171 
-    ## b[(Intercept) SiteCodevisit:PRPND010_4]      0.0011 0.9999 5823 
-    ## b[(Intercept) SiteCodevisit:PRPND010_5]      0.0013 1.0012 4570 
-    ## b[(Intercept) SiteCodevisit:PRPND014_1]      0.0013 0.9996 5156 
-    ## b[(Intercept) SiteCodevisit:PRPND014_2]      0.0012 0.9996 5503 
-    ## b[(Intercept) SiteCodevisit:PRPND014_3]      0.0014 0.9995 4815 
-    ## b[(Intercept) SiteCodevisit:PRPND014_4]      0.0012 0.9995 5045 
-    ## b[(Intercept) SiteCodevisit:PRPND014_5]      0.0015 0.9994 3973 
-    ## b[(Intercept) SiteCodevisit:PRPND015_1]      0.0013 0.9997 5593 
-    ## b[(Intercept) SiteCodevisit:PRPND015_2]      0.0015 1.0017 4883 
-    ## b[(Intercept) SiteCodevisit:PRPND015_3]      0.0013 0.9998 5253 
-    ## b[(Intercept) SiteCodevisit:TGIF_1]          0.0015 0.9997 4417 
-    ## b[(Intercept) SiteCodevisit:TGIF_2]          0.0013 1.0000 5018 
-    ## b[(Intercept) SiteCodevisit:TGIF_3]          0.0011 0.9999 5812 
-    ## b[(Intercept) SiteCodevisit:TGIF_4]          0.0011 0.9997 5738 
-    ## b[(Intercept) SiteCodevisit:TGIF_5]          0.0012 0.9997 5477 
-    ## b[(Intercept) SiteCode:PRNTH1]               0.0065 1.0043  936 
-    ## b[(Intercept) SiteCode:PRNTH4]               0.0070 1.0041  828 
-    ## b[(Intercept) SiteCode:PRNTHIDK]             0.0066 1.0050  962 
-    ## b[(Intercept) SiteCode:PRNTHMIT]             0.0066 1.0055  919 
-    ## b[(Intercept) SiteCode:PRNTHOWL]             0.0067 1.0033 1076 
-    ## b[(Intercept) SiteCode:PRPND009]             0.0065 1.0047  915 
-    ## b[(Intercept) SiteCode:PRPND010]             0.0068 1.0057  911 
-    ## b[(Intercept) SiteCode:PRPND014]             0.0066 1.0044  972 
-    ## b[(Intercept) SiteCode:PRPND015]             0.0069 1.0036 1044 
-    ## b[(Intercept) SiteCode:TGIF]                 0.0069 1.0043  852 
-    ## Sigma[SiteCodevisit:(Intercept),(Intercept)] 0.0002 1.0014 1495 
-    ## Sigma[SiteCode:(Intercept),(Intercept)]      0.0057 1.0003 1587 
-    ## mean_PPD                                     0.0014 1.0003 3894 
-    ## log-posterior                                0.2656 1.0041  774 
+    ## (Intercept)                                  0.0074 1.0029 1004 
+    ## visit                                        0.0025 1.0015 1544 
+    ## SpeciesCode                                  0.0039 1.0000 2968 
+    ## I(visit^2)                                   0.0004 1.0018 1555 
+    ## visitScaledSVL                               0.0001 0.9997 6313 
+    ## visit:SpeciesCode                            0.0017 1.0005 2910 
+    ## b[(Intercept) SiteCodevisit:PRNTH1_1]        0.0014 0.9997 4072 
+    ## b[(Intercept) SiteCodevisit:PRNTH1_2]        0.0013 0.9998 4080 
+    ## b[(Intercept) SiteCodevisit:PRNTH1_3]        0.0017 1.0000 2221 
+    ## b[(Intercept) SiteCodevisit:PRNTH1_4]        0.0011 1.0000 4209 
+    ## b[(Intercept) SiteCodevisit:PRNTH1_5]        0.0017 1.0009 2617 
+    ## b[(Intercept) SiteCodevisit:PRNTH4_1]        0.0014 0.9995 4785 
+    ## b[(Intercept) SiteCodevisit:PRNTH4_2]        0.0013 0.9997 4940 
+    ## b[(Intercept) SiteCodevisit:PRNTH4_3]        0.0013 0.9995 4633 
+    ## b[(Intercept) SiteCodevisit:PRNTH4_4]        0.0012 0.9993 4259 
+    ## b[(Intercept) SiteCodevisit:PRNTH4_5]        0.0013 0.9997 4768 
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_1]      0.0014 0.9997 4565 
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_2]      0.0014 0.9997 4080 
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_3]      0.0013 1.0000 4572 
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_4]      0.0012 0.9998 4944 
+    ## b[(Intercept) SiteCodevisit:PRNTHIDK_5]      0.0014 1.0003 5055 
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_1]      0.0014 0.9996 3805 
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_2]      0.0013 0.9999 4508 
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_3]      0.0013 0.9996 4403 
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_4]      0.0013 1.0004 3170 
+    ## b[(Intercept) SiteCodevisit:PRNTHMIT_5]      0.0013 1.0000 4416 
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_1]      0.0014 0.9996 5399 
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_2]      0.0013 0.9995 5302 
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_3]      0.0015 1.0001 4373 
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_4]      0.0014 0.9995 5242 
+    ## b[(Intercept) SiteCodevisit:PRNTHOWL_5]      0.0015 0.9993 4974 
+    ## b[(Intercept) SiteCodevisit:PRPND009_1]      0.0014 1.0000 4078 
+    ## b[(Intercept) SiteCodevisit:PRPND009_2]      0.0015 1.0001 3246 
+    ## b[(Intercept) SiteCodevisit:PRPND009_3]      0.0015 1.0011 2784 
+    ## b[(Intercept) SiteCodevisit:PRPND009_4]      0.0011 0.9998 4228 
+    ## b[(Intercept) SiteCodevisit:PRPND009_5]      0.0018 1.0010 2427 
+    ## b[(Intercept) SiteCodevisit:PRPND010_1]      0.0016 1.0000 3551 
+    ## b[(Intercept) SiteCodevisit:PRPND010_2]      0.0013 0.9994 4692 
+    ## b[(Intercept) SiteCodevisit:PRPND010_3]      0.0013 0.9992 4485 
+    ## b[(Intercept) SiteCodevisit:PRPND010_4]      0.0011 0.9997 5143 
+    ## b[(Intercept) SiteCodevisit:PRPND010_5]      0.0015 1.0001 3254 
+    ## b[(Intercept) SiteCodevisit:PRPND014_1]      0.0013 0.9999 4670 
+    ## b[(Intercept) SiteCodevisit:PRPND014_2]      0.0012 1.0001 4931 
+    ## b[(Intercept) SiteCodevisit:PRPND014_3]      0.0015 1.0008 3685 
+    ## b[(Intercept) SiteCodevisit:PRPND014_4]      0.0014 0.9995 3558 
+    ## b[(Intercept) SiteCodevisit:PRPND014_5]      0.0016 1.0005 3377 
+    ## b[(Intercept) SiteCodevisit:PRPND015_1]      0.0014 1.0004 4844 
+    ## b[(Intercept) SiteCodevisit:PRPND015_2]      0.0016 0.9999 3731 
+    ## b[(Intercept) SiteCodevisit:PRPND015_3]      0.0014 0.9995 4302 
+    ## b[(Intercept) SiteCodevisit:TGIF_1]          0.0015 0.9995 3904 
+    ## b[(Intercept) SiteCodevisit:TGIF_2]          0.0014 1.0000 4129 
+    ## b[(Intercept) SiteCodevisit:TGIF_3]          0.0012 1.0004 4257 
+    ## b[(Intercept) SiteCodevisit:TGIF_4]          0.0013 0.9995 4053 
+    ## b[(Intercept) SiteCodevisit:TGIF_5]          0.0012 1.0008 4671 
+    ## b[(Intercept) SiteCode:PRNTH1]               0.0073 1.0057  775 
+    ## b[(Intercept) SiteCode:PRNTH4]               0.0074 1.0049  796 
+    ## b[(Intercept) SiteCode:PRNTHIDK]             0.0076 1.0047  765 
+    ## b[(Intercept) SiteCode:PRNTHMIT]             0.0075 1.0050  743 
+    ## b[(Intercept) SiteCode:PRNTHOWL]             0.0069 1.0039 1192 
+    ## b[(Intercept) SiteCode:PRPND009]             0.0074 1.0064  761 
+    ## b[(Intercept) SiteCode:PRPND010]             0.0071 1.0051  848 
+    ## b[(Intercept) SiteCode:PRPND014]             0.0075 1.0058  762 
+    ## b[(Intercept) SiteCode:PRPND015]             0.0068 1.0040 1044 
+    ## b[(Intercept) SiteCode:TGIF]                 0.0075 1.0050  762 
+    ## Sigma[SiteCodevisit:(Intercept),(Intercept)] 0.0002 1.0027 1347 
+    ## Sigma[SiteCode:(Intercept),(Intercept)]      0.0073 1.0035 1240 
+    ## mean_PPD                                     0.0013 1.0012 4064 
+    ## log-posterior                                0.2251 1.0010 1068 
     ## 
     ## For each parameter, mcse is Monte Carlo standard error, n_eff is a crude measure of effective sample size, and Rhat is the potential scale reduction factor on split chains (at convergence Rhat=1).
 
