@@ -232,7 +232,7 @@ Parasite Richness ~ Species + Date + Date^2 + Species x Date + Species x Date^2 
   * Individual level: the individual-level richnesses are predicted by `species` (PSRE have more), `body size`, and the intercept is the sample-level mean.
   
   
-(I'm still not sure how to format the greek symbols and subscripts here).
+(I'm still not sure how to format the greek symbols and subscripts here--but I'm following Gelman and Hill's examples).
 
 ## Individual level
 At the individual level, parasite richness ($y_i$) is Poisson distributed with an expected mean of $\mu_i$. 
@@ -241,30 +241,23 @@ At the individual level, parasite richness ($y_i$) is Poisson distributed with a
 
 The log(parasite richness) is predicted by individual-level covariates: species, scaled snout vent length, and interaction. Since the effect of visit is at the site-level, but it interacts with species, I believe that the interaction must go at this level too:
 
-*Equation 2*:  log($\mu_i$) = $\mu_{j[i]}$ + $\beta_1$$\times$species + $\beta_2$$\times$scaledSVL + $\beta_3$$\times$species$\times$scaledSVL + $\beta_4$$\times$species$\times$date + $\beta_5$$\times$species$\times$date^2
+*Equation 2*:  log($\mu_i$) = $\alpha_{j[i]}$ + $\beta_1$$\times$species + $\beta_2$$\times$scaledSVL + $\beta_3$$\times$species$\times$scaledSVL + $\beta_4$$\times$species$\times$date + $\beta_5$$\times$species$\times$date^2
 
 Individual i's parasite load is predicted by the mean of the sample it came from [j] plus the fixed effects. 
 
 ## Sampling event level
-Each sampling event mean ($\mu_{j}$) can be predicted from a polynomial relationship with date, but varies by a random amount. The effect of date depends on species (which is why there is an interaction at the individual level).
+Each sampling event mean ($\alpha_{j}$) is drawn randomly from a normal distribution centered around the expected sampling event mean. The expected sampling event mean depends on date using a polynomial function. The effect of date depends on species (which is why there is an interaction at the individual level).
 
-The intercept represents the random parasite richness at sampling event j from site k.
+The intercept represents the random parasite richness at site k.
 
-*Equation 3*: $\mu_j$ = $\alpha_{j[k]}$ + $\beta_6$$\times$date + $\beta_7$$\times$date^2
+*Equation 3* : $\alpha_j$ ~ Normal($\alpha_{k[i]}$ + $\beta_6$$\times$date + $\beta_7$$\times$date^2, $\sigma^2_{\alpha[j]}$)
 
-The sample-level mean ($\alpha_j$) from site k is drawn randomly from the mean for that site ($\gamma_k$)
-
-*Equation 4*
-$\alpha_{j[k]}$ ~ Normal($\mu_{\gamma[k]}$, $\sigma^2_\alpha$)
+(I could probably draw from a normal centered around $\mu_j$ and then give a separate equation for the deterministic part (fixed effects) but I think they can be combined; this is what Gelmand and Hill do.)
 
 ## Site level
-The expected mean for a site k is predicted by latitude
+The expected mean for a site k ($\alpha_{k}$) is drawn randomly from a normal distribution centered around the expected site mean. The expected site mean depends on latitude. The intercept is the mean of all sites $\bar{\alpha_k}$.
 
-*Equation 5*: $\mu_{\gamma[k]}$ = $\gamma_{k}$ + $\beta_8$$\times$latitude
-
-The random effect for site k is drawn from the across-site average
-
-*Equation 6*: $\gamma_k$ ~ Normal($\bar{\gamma}$, $\sigma^2_\gamma$)
+*Equation 4*: $\alpha_k}$ ~  Normal($\bar{\alpha_k}$ + $\beta_8$$\times$latitude, $\sigma^2_{\alpha[k]}$)
 
 # Fitting the model
 
