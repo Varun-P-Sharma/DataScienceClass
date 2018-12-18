@@ -212,7 +212,7 @@ Site level
 
 The expected mean for a site k (*α*<sub>*k*</sub>) is drawn randomly from a normal distribution centered around the expected site mean. The expected site mean depends on latitude. The intercept is the mean of all sites $\\bar{\\alpha\_k}$.
 
-*Equation 4*: $\\alpha\_k}$ ~ Normal($\\bar{\\alpha\_k}$ + *β*<sub>8</sub>×latitude, *σ*<sub>*α*\[*k*\]</sub><sup>2</sup>)
+*Equation 4*: *α*<sub>*k*</sub> ~ Normal($\\bar{\\alpha\_k}$ + *β*<sub>8</sub>×latitude, *σ*<sub>*α*\[*k*\]</sub><sup>2</sup>)
 
 Fitting the model
 =================

@@ -257,7 +257,7 @@ The intercept represents the random parasite richness at site k.
 ## Site level
 The expected mean for a site k ($\alpha_{k}$) is drawn randomly from a normal distribution centered around the expected site mean. The expected site mean depends on latitude. The intercept is the mean of all sites $\bar{\alpha_k}$.
 
-*Equation 4*: $\alpha_k}$ ~  Normal($\bar{\alpha_k}$ + $\beta_8$$\times$latitude, $\sigma^2_{\alpha[k]}$)
+*Equation 4*: $\alpha_k$ ~  Normal($\bar{\alpha_k}$ + $\beta_8$$\times$latitude, $\sigma^2_{\alpha[k]}$)
 
 # Fitting the model
 
