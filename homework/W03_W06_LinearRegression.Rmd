@@ -23,7 +23,7 @@ Data struture:
 7) median housing density within home range
 ## reading in the data
 ```{r}
-coug <- read.csv("cougarisotopedata.csv")
+coug <- read.csv("data/cougarisotopedata.csv")
 str(coug)
 colnames(coug)[2:3] <- c("N15", "C13")
 coug <- coug[complete.cases(coug),]
